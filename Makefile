@@ -9,7 +9,7 @@ SRC = ${TARGET}.c
 MYLIB = mysoem.c
 LIB_DIR = soem/${TARGET}
 
-UTILS = soem/utils.c
+UTILS = soem/log.c soem/timer.c
 
 ORIGIN_LIB_DIR = soem/origin
 ARCHIVE_DIR = archive

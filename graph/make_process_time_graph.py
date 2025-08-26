@@ -58,9 +58,9 @@ def main():
         average(kernel_total),
     ]
     labels = [
-        "User Send",
-        "User Recv",
-        "User Total",
+        "SOEM Send",
+        "SOEM Recv",
+        "SOEM Total",
         "Kernel Total",
     ]
 

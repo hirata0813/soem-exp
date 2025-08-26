@@ -80,7 +80,7 @@ def main():
 
         # user send
         plt.hlines(y + offset, u_ss/1e6, u_se/1e6, colors='blue', linewidth=4,
-                   label="user send" if plot_idx==0 else "")
+                   label="SOEM send" if plot_idx==0 else "")
         plt.text(u_se/1e6, y + offset + 0.05, auto_unit(u_se - u_ss), fontsize=8, color='blue')
 
         # kernel send→recv
@@ -90,7 +90,7 @@ def main():
 
         # user recv
         plt.hlines(y-offset, u_rs/1e6, u_re/1e6, colors='green', linewidth=4,
-                   label="user recv" if plot_idx==0 else "")
+                   label="SOEM recv" if plot_idx==0 else "")
         plt.text(u_re/1e6, y - offset + 0.05, auto_unit(u_re - u_rs), fontsize=8, color='green')
 
         # 行番号とRTT表示

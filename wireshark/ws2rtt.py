@@ -30,7 +30,7 @@ def main():
             tx_time_ns = parse_time(lines[i])
             rx_time_ns = parse_time(lines[i + 1])
             diff_us = (rx_time_ns - tx_time_ns) / 1000  # ナノ秒 → マイクロ秒
-            writer.writerow([f"{diff_us:.3f}"])
+            writer.writerow([f"{diff_us:.6f}"])
 
 if __name__ == "__main__":
     main()
