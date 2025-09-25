@@ -1,7 +1,7 @@
 #ifndef MYSOEM_H
 #define MYSOEM_H
 
-#include "soem/timestamp/soem.h"
+#include "soem/trace/soem.h"
 #include <stdio.h>
 #include <string.h>
 
