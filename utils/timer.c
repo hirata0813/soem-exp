@@ -1,7 +1,7 @@
 #include "timer.h"
 
 int clock_index = 0;
-uint64_t clocks[10];
+uint64_t rdtsc_clocks[10];
 
 void reset_clock_index(void) {
   clock_index = 0;
@@ -33,4 +33,9 @@ void save_unix_timestamp(int index) {
   //   save_timespec->tv_sec -= 1;
   //   save_timespec->tv_nsec += NSEC_MAX;
   // }
+}
+
+// for process time
+double calc_processtime_us_rdtsc(int index_start, int index_end, double cpu_hz) {
+  return ((double)(rdtsc_clocks[index_end] - rdtsc_clocks[index_start]) / cpu_hz) * 1000000;
 }

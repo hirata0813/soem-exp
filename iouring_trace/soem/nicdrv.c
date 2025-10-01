@@ -317,8 +317,10 @@ int ecx_outframe_uring(ecx_portt *port, uint8 idx, int stacknumber)
   //  rval = send(*stack->sock, (*stack->txbuf)[idx], lp, 0);
 
   // USER CODE BEGIN
+  get_clock_rdtsc(INDEX_SEND_START);
    iouring_request_send(*stack->sock, (*stack->txbuf)[idx], lp, 0);
    rval = iouring_wait_send_completion();
+   get_clock_rdtsc(INDEX_SEND_END);
 
    if (rval == -1)
    {
@@ -332,7 +334,7 @@ int ecx_outframe_uring(ecx_portt *port, uint8 idx, int stacknumber)
    return rval;
 }
 
-int ecx_outframe_uring_recv(ecx_portt *port, uint8 idx, int stacknumber)
+int ecx_outframe_recv_uring(ecx_portt *port, uint8 idx, int stacknumber)
 {
    int txlp, rxlp, rval;
    ec_stackT *stack;
@@ -350,8 +352,12 @@ int ecx_outframe_uring_recv(ecx_portt *port, uint8 idx, int stacknumber)
   //  rval = send(*stack->sock, (*stack->txbuf)[idx], lp, 0);
 
   // USER CODE BEGIN
-   iouring_request_send_recv(*stack->sock, (*stack->txbuf)[idx], txlp, 0);
+   rxlp = sizeof(port->tempinbuf);
+
+   get_clock_rdtsc(INDEX_SEND_START);
+   iouring_request_send_recv(*stack->sock, (*stack->txbuf)[idx], txlp, (*stack->tempbuf), rxlp, 0);
    rval = iouring_wait_send_completion();
+   get_clock_rdtsc(INDEX_SEND_END);
 
    if (rval == -1)
    {
@@ -414,7 +420,7 @@ int ecx_outframe_red_uring(ecx_portt *port, uint8 idx)
    /* rewrite MAC source address 1 to primary */
    ehp->sa1 = htons(priMAC[1]);
    /* transmit over primary socket*/
-   rval = ecx_outframe_uring(port, idx, 0);
+   rval = ecx_outframe_recv_uring(port, idx, 0);
    if (port->redstate != ECT_RED_NONE)
    {
       pthread_mutex_lock(&(port->tx_mutex));
@@ -487,6 +493,7 @@ static int iouring_soem_recv_request(ecx_portt *port, int stacknumber) {
    }
    lp = sizeof(port->tempinbuf);
 
+   get_clock_rdtsc(INDEX_RECV_START);
    int submission = iouring_request_recv(*stack->sock, (*stack->tempbuf), lp, 0);
 }
 
@@ -507,6 +514,7 @@ static int ecx_recvpkt_uring(ecx_portt *port, int stacknumber)
    lp = sizeof(port->tempinbuf);
   //  bytesrx = recv(*stack->sock, (*stack->tempbuf), lp, MSG_DONTWAIT);
    bytesrx = iouring_wait_recv_completion();
+   get_clock_rdtsc(INDEX_RECV_END);
    port->tempinbufs = bytesrx;
 
    return (bytesrx > 0);
@@ -862,7 +870,7 @@ static int ecx_waitinframe_red_uring(ecx_portt *port, uint8 idx, osal_timert *ti
    }
    fdsp = &fds[0];
 
-   iouring_soem_recv_request(port, 0);
+  //  iouring_soem_recv_request(port, 0);
 
    do
    {

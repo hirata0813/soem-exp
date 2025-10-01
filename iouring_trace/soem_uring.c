@@ -23,6 +23,11 @@ int iouring_request_send_recv(int sock, void *txbuf, size_t txlen, void *rxbuf, 
   io_uring_sqe_set_data(ioctx.sq, (void *)REQ_ID_SEND);
   ioctx.sq->flags |= IOSQE_IO_LINK;
 
+  ioctx.sq = io_uring_get_sqe(&(ioctx.ring));
+  if (ioctx.sq == NULL) {
+    printf("[ERROR] fail to iouring submissonQ\n");
+    return -1;
+  }
   io_uring_prep_recv(ioctx.sq, sock, rxbuf, rxlen, flag);
   io_uring_sqe_set_data(ioctx.sq, (void *)REQ_ID_RECV);
 
