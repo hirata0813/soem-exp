@@ -40,7 +40,6 @@ def main():
     datasets = [
         (user_data[:,0], "$\it{T_{s1}}$"),
         (user_data[:,1], "$\it{T_{s2}}$"),
-        (user_data[:,2], "$\it{T_{s3}}$"),
         (kernel_data,   "$\it{T_{k}}$")
     ]
 
@@ -48,7 +47,7 @@ def main():
     print(f"Max RTT: {max_rtt} us")
 
     # 色リスト（系列ごとに違う色を割当て）
-    colors = ["red", "green", "blue", "violet"]
+    colors = ["red", "blue", "violet"]
 
     # サブプロット作成（縦に5つ並べる）
     fig, axes = plt.subplots(len(datasets), 1, figsize=(10, 12), sharex=False)

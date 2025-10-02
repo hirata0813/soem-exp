@@ -65,7 +65,7 @@ def main():
     # x 軸範囲を最大 RTT に合わせて調整
     plt.xlim(0, ((max_rtt // 1000) + 1) * 1000)
 
-    plt.title(f'ラウンドトリップの処理時間ヒストグラム '
+    plt.title(f'ラウンドトリップ の処理時間ヒストグラム '
               f'({BIN_US_WIDTH}us 間隔, 通信回数: {len(rtt_list)})')
     plt.xlabel('処理時間 (us)')
     plt.ylabel('頻度 (log scale)')

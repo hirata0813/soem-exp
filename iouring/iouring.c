@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
 
     for (i = 1; i <= repeat_cnt; ++i)
     {
-      printf("Roud Trip: %d\n", i);
+      // printf("Roud Trip: %d\n", i);
       get_clock_rdtsc(0);
       ecx_send_processdata_uring(context);
       wkc = ecx_receive_processdata_uring(context, EC_TIMEOUTRET);
@@ -323,8 +323,9 @@ int main(int argc, char *argv[])
 
       uint64_t diff_clock_rtt = clocks[1] - clocks[0];
 
-      // Unix timestamp
-      logfile_printf("%.9f\n", (double)diff_clock_rtt / CPU_HZ);
+      // round trip time
+      double rtt_usec = ((double)diff_clock_rtt / CPU_HZ) * 1000000;
+      logfile_printf("%.9f\n", rtt_usec);
 
       expected_wkc = grp->outputsWKC * 2 + grp->inputsWKC;
       if (wkc == EC_NOFRAME)
@@ -332,7 +333,7 @@ int main(int argc, char *argv[])
           printf("Round %d: No frame\n", i);
       }
       else {
-        printf("WKC: %d\n", wkc);
+        // printf("WKC: %d\n", wkc);
       }
 
       osal_usleep(interval_usec);

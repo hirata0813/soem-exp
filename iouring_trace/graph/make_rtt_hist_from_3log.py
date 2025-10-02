@@ -1,11 +1,13 @@
+#!/usr/bin/env python3
 import sys
 import matplotlib.pyplot as plt
 import os
 import japanize_matplotlib
 
-MAX_RTT = 10000      # RTT の最大値(us)
-BIN_US_WIDTH = 10    # ヒストグラムのビン幅(us)
-OVER_THRESHOD_US = 500  # RTT の警告閾値(us)
+MAX_RTT = 10000        # RTT の最大値(us)
+BIN_US_WIDTH = 10      # ヒストグラムのビン幅(us)
+OVER_THRESHOD_US = 500 # RTT の警告閾値(us)
+TARGET_COL = 2         # 0始まり → 3列目を対象にする
 
 def main():
     if len(sys.argv) != 2:
@@ -15,13 +17,17 @@ def main():
     filepath = sys.argv[1]
     rtt_list = []
 
-    # ログファイル形式: 各行に RTT 値(us) が1つ
+    # ログファイル形式: 各行に複数列の値 (例: 100.01,200.02,300.03)
     with open(filepath, 'r') as f:
         for line in f:
             line = line.strip()
             if line:  # 空行は無視
                 try:
-                    rtt_list.append(float(line))
+                    parts = line.split(",")
+                    if len(parts) > TARGET_COL:
+                        rtt_list.append(float(parts[TARGET_COL]))
+                    else:
+                        print(f"[WARN] 列数不足でスキップ: {line}")
                 except ValueError:
                     print(f"[WARN] 数値変換できない行をスキップ: {line}")
 
@@ -65,7 +71,7 @@ def main():
     # x 軸範囲を最大 RTT に合わせて調整
     plt.xlim(0, ((max_rtt // 1000) + 1) * 1000)
 
-    plt.title(f'ラウンドトリップの処理時間ヒストグラム '
+    plt.title(f'ラウンドトリップ の処理時間ヒストグラム '
               f'({BIN_US_WIDTH}us 間隔, 通信回数: {len(rtt_list)})')
     plt.xlabel('処理時間 (us)')
     plt.ylabel('頻度 (log scale)')
