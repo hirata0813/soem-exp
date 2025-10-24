@@ -51,7 +51,7 @@
 #include "osal.h"
 
 #include <stdio.h>
-#include "../utils.h"
+#include "../../utils/utils.h"
 
 /** Redundancy modes */
 enum

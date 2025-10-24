@@ -3,7 +3,7 @@
  * license. See the file LICENSE.md distributed with this software for
  * full license information.
  */
-#include <osal.h>
+#include "osal.h"
 #include <stdlib.h>
 #include <string.h>
 
