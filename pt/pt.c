@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
   int wkc, expected_wkc;
 
   // valiables for test
-  char nic[10] = "enp3s0";
+  char nic[10] = "eno1";
   uint32_t repeat_cnt = atoi(argv[1]);
   char *id_str = argv[2];
 
