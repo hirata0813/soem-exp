@@ -46,6 +46,8 @@
 #include <netpacket/packet.h>
 #include <pthread.h>
 #include <poll.h>
+#include <bpf/bpf.h>
+#include <sys/syscall.h>
 
 #include "oshw.h"
 #include "osal.h"
@@ -528,11 +530,23 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    }
    fdsp = &fds[0];
 
+   int pid = getpid();
+   int tid = syscall(SYS_gettid);
+   int pids_fd = bpf_obj_get("/sys/fs/bpf/priority_pids");
+   int tids_fd = bpf_obj_get("/sys/fs/bpf/priority_tids");
+   int flag0 = 0;
+   int flag1 = 1;
+
    get_clock_rdtsc(2);
+   // ===========優先区間======================================
+   if (pids_fd >= 3 && tids_fd >= 3){
+    	     bpf_map_update_elem(pids_fd, &pid, &flag1, BPF_ANY);
+    	     bpf_map_update_elem(tids_fd, &tid, &flag1, BPF_ANY);
+   }
    do
    {
       poll_err = ppoll(fdsp, pollcnt, &timeout_spec, NULL);
-     get_clock_rdtsc(3);
+      get_clock_rdtsc(3);
 
       if (poll_err >= 0)
       {
@@ -549,6 +563,14 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
       }
       /* wait for both frames to arrive or timeout */
    } while (((wkc <= EC_NOFRAME) || (wkc2 <= EC_NOFRAME)) && !osal_timer_is_expired(timer));
+
+   if (pids_fd >= 3 && tids_fd >= 3){
+    	     bpf_map_update_elem(pids_fd, &pid, &flag0, BPF_ANY);
+    	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+   }
+   // ===========優先区間======================================
+
+
    /* only do redundant functions when in redundant mode */
   //  if (port->redstate != ECT_RED_NONE)
   //  {
