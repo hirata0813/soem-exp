@@ -53,6 +53,9 @@
 #include <stdio.h>
 #include "../../utils/utils.h"
 
+#include <scx/common.h>
+#include "scx_priority.bpf.skel.h"
+
 /** Redundancy modes */
 enum
 {
