@@ -47,7 +47,9 @@
 #include <pthread.h>
 #include <poll.h>
 #include <bpf/bpf.h>
+#include <sys/types.h>
 #include <sys/syscall.h>
+#include "../common.h"
 
 #include "oshw.h"
 #include "osal.h"
@@ -543,6 +545,8 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
     	     bpf_map_update_elem(pids_fd, &pid, &flag1, BPF_ANY);
     	     bpf_map_update_elem(tids_fd, &tid, &flag1, BPF_ANY);
    }
+   // ポーリング開始時刻取得
+   io_start[io_cnt] = __rdtsc();
    do
    {
       poll_err = ppoll(fdsp, pollcnt, &timeout_spec, NULL);
@@ -564,11 +568,16 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
       /* wait for both frames to arrive or timeout */
    } while (((wkc <= EC_NOFRAME) || (wkc2 <= EC_NOFRAME)) && !osal_timer_is_expired(timer));
 
+   // ポーリング完了時刻取得
+   io_end[io_cnt] = __rdtsc();
+
    if (pids_fd >= 3 && tids_fd >= 3){
     	     bpf_map_update_elem(pids_fd, &pid, &flag0, BPF_ANY);
     	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
    }
    // ===========優先区間======================================
+   // カウンタを1増やす
+   io_cnt++;
 
 
    /* only do redundant functions when in redundant mode */

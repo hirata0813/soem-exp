@@ -154,6 +154,12 @@ fieldbus_stop(Fieldbus *fieldbus)
    printf("done\n");
 }
 
+uint32_t repeat_cnt;
+uint32_t disturb_num;
+double *io_start;
+double *io_end;
+uint32_t io_cnt = 0;
+
 int main(int argc, char *argv[])
 {
   if (argc < 3) {
@@ -169,8 +175,15 @@ int main(int argc, char *argv[])
 
   // valiables for test
   char nic[10] = "eno1";
-  uint32_t repeat_cnt = atoi(argv[1]);
-  char *id_str = argv[2];
+  repeat_cnt = atoi(argv[1]);
+  disturb_num = atoi(argv[2]);
+  char *id_str = argv[3];
+  double *io_start = malloc(sizeof(double) * repeat_cnt);
+  double *io_end = malloc(sizeof(double) * repeat_cnt);
+  if (!io_start || !io_end) {
+      perror("malloc");
+      return 1;
+  }
 
   int send_start = 0;
   int send_end   = 1;
@@ -222,6 +235,7 @@ int main(int argc, char *argv[])
     }
 
     // 以下で，ログファイルに計測結果を吐き出す
+    // まず，io_cntとrepeat_cntが等しいかチェック
   }
 
   printf("\n[INFO] send cnt: %d\n", global_send_cnt);
