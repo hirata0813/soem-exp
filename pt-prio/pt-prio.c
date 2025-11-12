@@ -213,7 +213,6 @@ int main(int argc, char *argv[])
     // 以下の for ループ内で I/O 処理を担当
     for (i = 0; i < repeat_cnt; ++i)
     {
-      printf("io_cnt: %d\n", io_cnt);
       ecx_send_processdata(context);
       wkc = ecx_receive_processdata(context, EC_TIMEOUTRET);
 

@@ -89,7 +89,6 @@ int osal_thread_create(void *thandle, int stacksize, void *func, void *param)
    threadp = thandle;
    pthread_attr_init(&attr);
    pthread_attr_setstacksize(&attr, stacksize);
-   //printf("pthread crate\n");
    ret = pthread_create(threadp, &attr, func, param);
    if (ret < 0)
    {
@@ -108,7 +107,6 @@ int osal_thread_create_rt(void *thandle, int stacksize, void *func, void *param)
    threadp = thandle;
    pthread_attr_init(&attr);
    pthread_attr_setstacksize(&attr, stacksize);
-   //printf("pthread crate\n");
    ret = pthread_create(threadp, &attr, func, param);
    pthread_attr_destroy(&attr);
    if (ret < 0)

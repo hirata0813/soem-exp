@@ -577,7 +577,7 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
     	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
    }
    // ===========優先区間======================================
-   printf("io_start=%d,io_end=%d\n", io_start[io_cnt], io_end[io_cnt]);
+   //printf("io_start=%d,io_end=%d\n", io_start[io_cnt], io_end[io_cnt]);
    close(pids_fd);
    close(tids_fd);
 
