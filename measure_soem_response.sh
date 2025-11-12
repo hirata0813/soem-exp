@@ -63,7 +63,7 @@ run_benchmark() {
     local benchmark=$5
     
     echo ""
-    echo "Running iteration $iteration with $nonpriority_count non-priority tasks"
+    echo "Running iteration $iteration with $disturb_count disturb tasks"
     
     declare -a pids
     declare -a disturb_pids
@@ -116,7 +116,7 @@ main() {
     # パラメータ配列の定義
     slice_multipliers=(1)         # タイムスライスの倍率
     dispatch_limits=(1)         # ディスパッチ制限数（-1は無制限）
-    disturb_counts=(1..16)           # infinity_loopの数
+    disturb_counts=({1..16})           # infinity_loopの数
     joined=$(IFS=-; echo "${disturb_counts[*]}") # 出力ファイルの名前用
 
 
@@ -140,12 +140,10 @@ main() {
 
                 # 各イテレーション(1~10)について測定
         	    for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
-
-                    # 各nonpriority task数(1~10)について測定
-            		checkscheduler $slice_mult $dispatch_limit
+            		check_scheduler $slice_mult $dispatch_limit
                     run_benchmark $slice_mult $dispatch_limit $disturb_count $iteration $SIMPLE_SOEM
             		# スケジーラの停止
-            		stop_cheduler
+            		stop_scheduler
                 done
             done
         done
@@ -173,12 +171,10 @@ main() {
 
                 # 各イテレーション(1~10)について測定
         	    for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
-
-                    # 各nonpriority task数(1~10)について測定
-            		checkscheduler $slice_mult $dispatch_limit
+            		check_scheduler $slice_mult $dispatch_limit
                     run_benchmark $slice_mult $dispatch_limit $disturb_count $iteration $SCX_SOEM
             		# スケジーラの停止
-            		stop_cheduler
+            		stop_scheduler
                 done
             done
         done
