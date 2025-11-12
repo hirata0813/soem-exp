@@ -156,8 +156,8 @@ fieldbus_stop(Fieldbus *fieldbus)
 
 uint32_t repeat_cnt;
 uint32_t disturb_num;
-double *io_start;
-double *io_end;
+unsigned long long *io_start;
+unsigned long long *io_end;
 uint32_t io_cnt = 0;
 
 int main(int argc, char *argv[])
@@ -177,8 +177,8 @@ int main(int argc, char *argv[])
   char nic[10] = "eno1";
   repeat_cnt = atoi(argv[1]);
   disturb_num = atoi(argv[2]);
-  io_start = (double*)malloc(sizeof(double) * repeat_cnt);
-  io_end = (double*)malloc(sizeof(double) * repeat_cnt);
+  io_start = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
+  io_end = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
   if (!io_start || !io_end) {
       perror("malloc");
       return 1;
@@ -239,14 +239,15 @@ int main(int argc, char *argv[])
       osal_usleep(interval_usec);
     }
 
-    // 以下で，ログファイルに計測結果を吐き出す
-    // まず，io_cntとrepeat_cntが等しいかチェック
-    if (io_cnt != repeat_cnt){
-      perror("io_cnt != repeat_cnt");
-      return 1;
-    }
-   logfile_output();
   }
+
+  // 以下で，ログファイルに計測結果を吐き出す
+  // まず，io_cntとrepeat_cntが等しいかチェック
+  if (io_cnt != repeat_cnt){
+    perror("io_cnt != repeat_cnt");
+    return 1;
+  }
+  logfile_output();
 
   printf("\nio_cnt == repeat_cnt!\n");
   printf("\n[INFO] send cnt: %d\n", global_send_cnt);

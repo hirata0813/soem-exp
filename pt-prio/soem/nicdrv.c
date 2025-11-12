@@ -49,6 +49,7 @@
 #include <bpf/bpf.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
+#include <x86intrin.h>
 #include "../common.h"
 
 #include "oshw.h"
@@ -547,7 +548,6 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    }
    // ポーリング開始時刻取得
    io_start[io_cnt] = __rdtsc();
-   printf("io_cnt: %d", io_cnt);
    do
    {
       poll_err = ppoll(fdsp, pollcnt, &timeout_spec, NULL);
@@ -577,8 +577,9 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
     	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
    }
    // ===========優先区間======================================
-   // カウンタを1増やす
-   io_cnt++;
+   printf("io_start=%d,io_end=%d\n", io_start[io_cnt], io_end[io_cnt]);
+   close(pids_fd);
+   close(tids_fd);
 
 
    /* only do redundant functions when in redundant mode */
