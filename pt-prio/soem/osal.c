@@ -6,7 +6,6 @@
 #include "osal.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 /* Returns time from some unspecified moment in past,
  * strictly increasing, used for time intervals measurement. */

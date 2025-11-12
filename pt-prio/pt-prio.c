@@ -172,6 +172,8 @@ int main(int argc, char *argv[])
   ec_groupt *grp;
   uint32 n;
   int wkc, expected_wkc;
+  char fname[128];
+  sprintf(fname, "prior-soem-result.csv");
 
   // valiables for test
   char nic[10] = "eno1";
@@ -184,12 +186,6 @@ int main(int argc, char *argv[])
       return 1;
   }
 
-  int send_start = 0;
-  int send_end   = 1;
-  int poll_start = 2;
-  int poll_end   = 3;
-  int recv_start = 4;
-  int recv_end   = 5;
   int interval_usec = 20;
 
   // init logfile
@@ -246,7 +242,7 @@ int main(int argc, char *argv[])
     perror("io_cnt != repeat_cnt");
     return 1;
   }
-  logfile_output();
+  logfile_output(fname);
 
   printf("\nio_cnt == repeat_cnt!\n");
   printf("\n[INFO] send cnt: %d\n", global_send_cnt);

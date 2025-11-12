@@ -46,12 +46,20 @@
 #include <netpacket/packet.h>
 #include <pthread.h>
 #include <poll.h>
+#include <bpf/bpf.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include <x86intrin.h>
+#include "../common.h"
 
 #include "oshw.h"
 #include "osal.h"
 
 #include <stdio.h>
 #include "../../utils/utils.h"
+
+#include <scx/common.h>
+#include "scx_priority.bpf.skel.h"
 
 /** Redundancy modes */
 enum
@@ -287,9 +295,9 @@ int ecx_outframe(ecx_portt *port, uint8 idx, int stacknumber)
    (*stack->rxbufstat)[idx] = EC_BUF_TX;
 
    // USER CODE 
-   get_clock_rdtsc(0);
+   //get_clock_rdtsc(0);
    rval = send(*stack->sock, (*stack->txbuf)[idx], lp, 0);
-   get_clock_rdtsc(1);
+   //get_clock_rdtsc(1);
 
 
    if (rval == -1)
@@ -363,9 +371,9 @@ static int ecx_recvpkt(ecx_portt *port, int stacknumber)
    lp = sizeof(port->tempinbuf);
 
    // USER CODE
-   get_clock_rdtsc(4);
+   //get_clock_rdtsc(4);
    bytesrx = recv(*stack->sock, (*stack->tempbuf), lp, MSG_DONTWAIT);
-   get_clock_rdtsc(5);
+   //get_clock_rdtsc(5);
 
    port->tempinbufs = bytesrx;
 
@@ -525,11 +533,25 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    }
    fdsp = &fds[0];
 
-   get_clock_rdtsc(2);
+   int pid = getpid();
+   int tid = syscall(SYS_gettid);
+   int pids_fd = bpf_obj_get("/sys/fs/bpf/priority_pids");
+   int tids_fd = bpf_obj_get("/sys/fs/bpf/priority_tids");
+   int flag0 = 0;
+   int flag1 = 1;
+
+   //get_clock_rdtsc(2);
+   // ===========優先しない======================================
+   if (pids_fd >= 3 && tids_fd >= 3){
+    	     bpf_map_update_elem(pids_fd, &pid, &flag0, BPF_ANY);
+    	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+   }
+   // ポーリング開始時刻取得
+   io_start[io_cnt] = __rdtsc();
    do
    {
       poll_err = ppoll(fdsp, pollcnt, &timeout_spec, NULL);
-     get_clock_rdtsc(3);
+      //get_clock_rdtsc(3);
 
       if (poll_err >= 0)
       {
@@ -546,6 +568,20 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
       }
       /* wait for both frames to arrive or timeout */
    } while (((wkc <= EC_NOFRAME) || (wkc2 <= EC_NOFRAME)) && !osal_timer_is_expired(timer));
+
+   // ポーリング完了時刻取得
+   io_end[io_cnt] = __rdtsc();
+
+   if (pids_fd >= 3 && tids_fd >= 3){
+    	     bpf_map_update_elem(pids_fd, &pid, &flag0, BPF_ANY);
+    	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+   }
+   // ===========優先しない======================================
+   //printf("io_start=%d,io_end=%d\n", io_start[io_cnt], io_end[io_cnt]);
+   close(pids_fd);
+   close(tids_fd);
+
+
    /* only do redundant functions when in redundant mode */
   //  if (port->redstate != ECT_RED_NONE)
   //  {

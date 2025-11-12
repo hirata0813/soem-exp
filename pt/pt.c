@@ -154,6 +154,12 @@ fieldbus_stop(Fieldbus *fieldbus)
    printf("done\n");
 }
 
+uint32_t repeat_cnt;
+uint32_t disturb_num;
+unsigned long long *io_start;
+unsigned long long *io_end;
+uint32_t io_cnt = 0;
+
 int main(int argc, char *argv[])
 {
   if (argc < 3) {
@@ -166,22 +172,24 @@ int main(int argc, char *argv[])
   ec_groupt *grp;
   uint32 n;
   int wkc, expected_wkc;
+  char fname[128];
+  sprintf(fname, "simple-soem-result.csv");
 
   // valiables for test
   char nic[10] = "eno1";
-  uint32_t repeat_cnt = atoi(argv[1]);
-  char *id_str = argv[2];
+  repeat_cnt = atoi(argv[1]);
+  disturb_num = atoi(argv[2]);
+  io_start = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
+  io_end = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
+  if (!io_start || !io_end) {
+      perror("malloc");
+      return 1;
+  }
 
-  int send_start = 0;
-  int send_end   = 1;
-  int poll_start = 2;
-  int poll_end   = 3;
-  int recv_start = 4;
-  int recv_end   = 5;
   int interval_usec = 20;
 
   // init logfile
-  open_logfile("log/pt/clock_%d_%s_soem.log", repeat_cnt, id_str);
+  //open_logfile("log/pt/clock_%d_%s_soem.log", repeat_cnt, id_str);
 
   fieldbus_initialize(&fieldbus, nic);
   if (fieldbus_start(&fieldbus))
@@ -198,7 +206,8 @@ int main(int argc, char *argv[])
     printf("[INFO] Interval: %d (us)\n", interval_usec);
     printf("----- [ Round trip start ] -----\n");
 
-    for (i = 1; i <= repeat_cnt; ++i)
+    // 以下の for ループ内で I/O 処理を担当
+    for (i = 0; i < repeat_cnt; ++i)
     {
       ecx_send_processdata(context);
       wkc = ecx_receive_processdata(context, EC_TIMEOUTRET);
@@ -213,21 +222,38 @@ int main(int argc, char *argv[])
       expected_wkc = grp->outputsWKC * 2 + grp->inputsWKC;
       if (wkc == EC_NOFRAME)
       {
-          printf("Round %d: No frame\n", i);
+          //printf("Round %d: No frame\n", i);
           break;
       }
 
+
+      // カウンタを1増やす
+      io_cnt++;
+      //sleep(1);
+
       osal_usleep(interval_usec);
     }
+
   }
 
+  // 以下で，ログファイルに計測結果を吐き出す
+  // まず，io_cntとrepeat_cntが等しいかチェック
+  if (io_cnt != repeat_cnt){
+    perror("io_cnt != repeat_cnt");
+    return 1;
+  }
+  logfile_output(fname);
+
+  printf("\nio_cnt == repeat_cnt!\n");
   printf("\n[INFO] send cnt: %d\n", global_send_cnt);
   printf("\n[INFO] recv cnt: %d\n", global_recv_cnt);
   printf("\n[INFO] send_err cnt:  %d\n", global_send_err_cnt);
   printf("\n[INFO] recv_timout cnt:  %d\n", global_recv_timeout_cnt);
 
   fieldbus_stop(&fieldbus);
-  close_logfile();
+  //close_logfile();
+  free(io_start);
+  free(io_end);
 
   return 0;
 }
