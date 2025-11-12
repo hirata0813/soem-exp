@@ -547,6 +547,7 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    }
    // ポーリング開始時刻取得
    io_start[io_cnt] = __rdtsc();
+   printf("io_cnt: %d", io_cnt);
    do
    {
       poll_err = ppoll(fdsp, pollcnt, &timeout_spec, NULL);

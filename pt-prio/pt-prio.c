@@ -177,9 +177,8 @@ int main(int argc, char *argv[])
   char nic[10] = "eno1";
   repeat_cnt = atoi(argv[1]);
   disturb_num = atoi(argv[2]);
-  char *id_str = argv[3];
-  double *io_start = malloc(sizeof(double) * repeat_cnt);
-  double *io_end = malloc(sizeof(double) * repeat_cnt);
+  io_start = (double*)malloc(sizeof(double) * repeat_cnt);
+  io_end = (double*)malloc(sizeof(double) * repeat_cnt);
   if (!io_start || !io_end) {
       perror("malloc");
       return 1;
@@ -214,6 +213,7 @@ int main(int argc, char *argv[])
     // 以下の for ループ内で I/O 処理を担当
     for (i = 0; i < repeat_cnt; ++i)
     {
+      printf("io_cnt: %d\n", io_cnt);
       ecx_send_processdata(context);
       wkc = ecx_receive_processdata(context, EC_TIMEOUTRET);
 
@@ -230,6 +230,11 @@ int main(int argc, char *argv[])
           //printf("Round %d: No frame\n", i);
           break;
       }
+
+
+      // カウンタを1増やす
+      io_cnt++;
+      //sleep(1);
 
       osal_usleep(interval_usec);
     }
