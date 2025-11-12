@@ -18,5 +18,6 @@ extern int global_ppoll_cnt;
 void open_logfile(char *fmt, ...);
 void close_logfile();
 void logfile_printf(char *fmt, ...);
+void logfile_output();
 
 #endif

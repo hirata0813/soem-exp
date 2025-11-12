@@ -294,9 +294,9 @@ int ecx_outframe(ecx_portt *port, uint8 idx, int stacknumber)
    (*stack->rxbufstat)[idx] = EC_BUF_TX;
 
    // USER CODE 
-   get_clock_rdtsc(0);
+   //get_clock_rdtsc(0);
    rval = send(*stack->sock, (*stack->txbuf)[idx], lp, 0);
-   get_clock_rdtsc(1);
+   //get_clock_rdtsc(1);
 
 
    if (rval == -1)
@@ -370,9 +370,9 @@ static int ecx_recvpkt(ecx_portt *port, int stacknumber)
    lp = sizeof(port->tempinbuf);
 
    // USER CODE
-   get_clock_rdtsc(4);
+   //get_clock_rdtsc(4);
    bytesrx = recv(*stack->sock, (*stack->tempbuf), lp, MSG_DONTWAIT);
-   get_clock_rdtsc(5);
+   //get_clock_rdtsc(5);
 
    port->tempinbufs = bytesrx;
 
@@ -539,7 +539,7 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    int flag0 = 0;
    int flag1 = 1;
 
-   get_clock_rdtsc(2);
+   //get_clock_rdtsc(2);
    // ===========優先区間======================================
    if (pids_fd >= 3 && tids_fd >= 3){
     	     bpf_map_update_elem(pids_fd, &pid, &flag1, BPF_ANY);
@@ -550,7 +550,7 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    do
    {
       poll_err = ppoll(fdsp, pollcnt, &timeout_spec, NULL);
-      get_clock_rdtsc(3);
+      //get_clock_rdtsc(3);
 
       if (poll_err >= 0)
       {
