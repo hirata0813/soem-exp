@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
   uint32 n;
   int wkc, expected_wkc;
   char fname[128];
-  sprintf(fname, "prior-soem-result.csv");
+  sprintf(fname, "prior-soem-task-result.csv");
 
   // valiables for test
   char nic[10] = "eno1";
