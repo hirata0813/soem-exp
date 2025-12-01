@@ -10,6 +10,9 @@ SCX_SOEM="./pt-prio/pt-prio"
 DISTURB="./infinityloop"
 ITERATIONS=1
 
+# 外乱の数
+disturb_count="$1"
+
 PRIORITY_SCHED="scx_priority"
 
 # 出力ファイル
@@ -147,76 +150,55 @@ main() {
     echo "Starting benchmark with scx_priority scheduler"
 
     # パラメータ配列の定義
-    slice_multipliers=(1)         # タイムスライスの倍率
-    dispatch_limits=(1)         # ディスパッチ制限数（-1は無制限）
-    disturb_counts=(12 16)           # infinity_loopの数
+    #disturb_counts=(8)           # infinity_loopの数
     joined=$(IFS=-; echo "${disturb_counts[*]}") # 出力ファイルの名前用
 
+    timestamp=$(TZ=Asia/Tokyo date +%Y%m%d-%H%M%S)
 
     echo "disturb_num,elapsed" > $OUTPUT_FILE1
     echo "disturb_num,elapsed" > $OUTPUT_FILE2
 
-    # 計測1(SIMPLE_SOEM)
-    for dispatch_limit in "${dispatch_limits[@]}"; do
-        echo ""
-        echo "=============================================="
-            echo "Measure 1: SIMPLE SOEM"
-        echo "=============================================="
 
-    	for slice_mult in "${slice_multipliers[@]}"; do
-            echo ""
-            echo "--- Testing with slice multiplier: ${slice_mult} ---"
-    
-            for disturb_count in "${disturb_counts[@]}"; do
-                echo ""
-                echo "Testing with ${disturb_count} disturbs"
+    if [ "$2" -eq "0" ]; then
+    	# 計測1(SIMPLE_SOEM)
+    	echo ""
+    	echo "=============================================="
+    	echo "Measure 1: SIMPLE SOEM"
+    	echo "=============================================="
+    	
+    	echo "Testing with ${disturb_count} disturbs"
 
-                # 各イテレーション(1~10)について測定
-        	    for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
-            		check_scheduler $slice_mult $dispatch_limit
-                    run_benchmark $slice_mult $dispatch_limit $disturb_count $iteration $SIMPLE_SOEM
-            		# スケジーラの停止
-            		stop_scheduler
-                done
-            done
-        done
-    done
-    
-    timestamp=$(TZ=Asia/Tokyo date +%Y%m%d-%H%M%S)
+    	# 各イテレーション(1~10)について測定
+    	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
+    	    check_scheduler 1 1
+    	    run_benchmark 1 1 $disturb_count $iteration $SIMPLE_SOEM
+    	    # スケジーラの停止
+    	    stop_scheduler
+    	done
+    	
 
-    mkdir -p "/home/hirata/soem-logs/simple-soem/${timestamp}-dis-${joined}"
-    cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/simple-soem/${timestamp}-dis-${joined}/$OUTPUT_FILE1"
+    	mkdir -p "/home/hirata/soem-logs/simple-soem/${timestamp}-dis-${joined}"
+    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/simple-soem/${timestamp}-dis-${joined}/$OUTPUT_FILE1"
+    else
+    	# 計測2(SCX_SOEM)
+    	echo ""
+    	echo "=============================================="
+    	echo "Measure 2: SCX SOEM"
+    	echo "=============================================="
+    	
+    	echo "Testing with ${disturb_count} disturbs"
 
-    # 計測2(SCX SOEM)
-    for dispatch_limit in "${dispatch_limits[@]}"; do
-        echo ""
-        echo "=============================================="
-	    echo "Measure 2: SCX SOEM"
-        echo "=============================================="
-
-    	for slice_mult in "${slice_multipliers[@]}"; do
-            echo ""
-            echo "--- Testing with slice multiplier: ${slice_mult} ---"
-    
-            for disturb_count in "${disturb_counts[@]}"; do
-                echo ""
-                echo "Testing with ${disturb_count} disturbs"
-
-                # 各イテレーション(1~10)について測定
-        	    for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
-            		check_scheduler $slice_mult $dispatch_limit
-                    run_benchmark $slice_mult $dispatch_limit $disturb_count $iteration $SCX_SOEM
-            		# スケジーラの停止
-            		stop_scheduler
-                done
-            done
-        done
-    done
-    
-    timestamp=$(TZ=Asia/Tokyo date +%Y%m%d-%H%M%S)
-
-    mkdir -p "/home/hirata/soem-logs/scx-soem/${timestamp}-dis-${joined}"
-    cp "$OUTPUT_FILE2" "/home/hirata/soem-logs/scx-soem/${timestamp}-dis-${joined}/$OUTPUT_FILE2"
+    	# 各イテレーション(1~10)について測定
+    	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
+    	    check_scheduler 1 1
+    	    run_benchmark 1 1 $disturb_count $iteration $SCX_SOEM
+    	    # スケジーラの停止
+    	    stop_scheduler
+    	done
+    	
+    	mkdir -p "/home/hirata/soem-logs/scx-soem/${timestamp}-dis-${joined}"
+    	cp "$OUTPUT_FILE2" "/home/hirata/soem-logs/scx-soem/${timestamp}-dis-${joined}/$OUTPUT_FILE2"
+    fi
 
     echo "Finished."
 }
