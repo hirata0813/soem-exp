@@ -36,7 +36,7 @@ for disturb_count in "${disturb_counts[@]}"; do
 
     SOEM_PID=$(pgrep -x "pt")
 
-    LOGFILE="pt-${disturb_count}-${SOEM_PID}.log"
+    LOGFILE="pt-${disturb_count}.log"
     
     # ---- bpftrace をバックグラウンド起動 ----
     sudo bpftrace "$BPF_FILE" > "$LOGFILE" &
@@ -55,6 +55,11 @@ for disturb_count in "${disturb_counts[@]}"; do
     # ---- bpftrace のプロセス終了を待つ ----
     wait $BPFT_PID
     echo "bpftrace finished."
+
+    # ---- bpftrace のコードをバックアップ ----
+    mkdir -p "/home/hirata/soem-trace/pt-${disturb_count}"
+    cp "$LOGFILE" "/home/hirata/soem-trace/pt-${disturb_count}/$LOGFILE"
+    cp "$BPFFILE" "/home/hirata/soem-trace/pt-${disturb_count}/$BPFFILE"
 done
 
 for disturb_count in "${disturb_counts[@]}"; do
@@ -63,6 +68,8 @@ for disturb_count in "${disturb_counts[@]}"; do
     # ---- トレース対象プログラムをバックグラウンド起動 ----
     $TARGET_CMD $disturb_count 1 &
     TARGET_PID=$!
+
+    sleep 10
     
     # ---- bpftrace コードを generate ----
     ./gen-bpftrace.sh pt pt-prio infinityloop > "$BPF_FILE"
@@ -88,4 +95,9 @@ for disturb_count in "${disturb_counts[@]}"; do
     # ---- bpftrace のプロセス終了を待つ ----
     wait $BPFT_PID
     echo "bpftrace finished."
+
+    # ---- bpftrace のコードをバックアップ ----
+    mkdir -p "/home/hirata/soem-trace/ptprio-${disturb_count}"
+    cp "$LOGFILE" "/home/hirata/soem-trace/ptprio-${disturb_count}/$LOGFILE"
+    cp "$BPFFILE" "/home/hirata/soem-trace/ptprio-${disturb_count}/$BPFFILE"
 done

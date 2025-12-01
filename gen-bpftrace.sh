@@ -34,6 +34,10 @@ done
 
 # ---- bpftrace スクリプト出力 ---------------
 cat <<EOF
+config = {
+    max_map_keys=65536
+}
+
 BEGIN {
     @idx = 0;
 }
