@@ -21,6 +21,28 @@ if [ -z "$TARGET_CMD" ] || [ -z "$BPF_FILE" ]; then
     exit 1
 fi
 
+# disturb（infinityloop）
+if pgrep -f "infinityloop" > /dev/null; then
+    echo "Stopping existing infinityloop tasks..."
+    sudo pkill -f "infinityloop"
+    sleep 1
+fi
+
+# SIMPLE_SOEM (pt)
+if pgrep -f "./pt/pt" > /dev/null; then
+    echo "Stopping existing pt (simple soem)..."
+    sudo pkill -f "./pt/pt"
+    sleep 1
+fi
+
+# SCX_SOEM (pt-prio)
+if pgrep -f "./pt-prio/pt-prio" > /dev/null; then
+    echo "Stopping existing pt-prio (scx soem)..."
+    sudo pkill -f "./pt-prio/pt-prio"
+    sleep 1
+fi
+
+
 disturb_counts=(0 4 8 12)
 for disturb_count in "${disturb_counts[@]}"; do
     echo ""
@@ -36,7 +58,7 @@ for disturb_count in "${disturb_counts[@]}"; do
 
     SOEM_PID=$(pgrep -x "pt")
 
-    LOGFILE="pt-${disturb_count}.log"
+    LOGFILE="pt-${disturb_count}-${SOEM_PID}.log"
     
     # ---- bpftrace をバックグラウンド起動 ----
     sudo bpftrace "$BPF_FILE" > "$LOGFILE" &
@@ -59,7 +81,7 @@ for disturb_count in "${disturb_counts[@]}"; do
     # ---- bpftrace のコードをバックアップ ----
     mkdir -p "/home/hirata/soem-trace/pt-${disturb_count}"
     cp "$LOGFILE" "/home/hirata/soem-trace/pt-${disturb_count}/$LOGFILE"
-    cp "$BPFFILE" "/home/hirata/soem-trace/pt-${disturb_count}/$BPFFILE"
+    cp "$BPF_FILE" "/home/hirata/soem-trace/pt-${disturb_count}/$BPF_FILE"
 done
 
 for disturb_count in "${disturb_counts[@]}"; do
@@ -99,5 +121,5 @@ for disturb_count in "${disturb_counts[@]}"; do
     # ---- bpftrace のコードをバックアップ ----
     mkdir -p "/home/hirata/soem-trace/ptprio-${disturb_count}"
     cp "$LOGFILE" "/home/hirata/soem-trace/ptprio-${disturb_count}/$LOGFILE"
-    cp "$BPFFILE" "/home/hirata/soem-trace/ptprio-${disturb_count}/$BPFFILE"
+    cp "$BPF_FILE" "/home/hirata/soem-trace/ptprio-${disturb_count}/$BPF_FILE"
 done
