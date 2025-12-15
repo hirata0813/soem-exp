@@ -1,5 +1,6 @@
 #include "log.h"
-#include "../pt-prio/common.h"
+#include "../pt/common.h"
+#include "string.h"
 const unsigned long long CPU_FREQ_HZ = 3500000000UL;
 
 // 送受信計測用
@@ -51,6 +52,31 @@ void logfile_output(char *fname) {
         fprintf(fp, "%d,%.9f\n", disturb_num, elapsed);
   }
   fclose(fp);
+}
+
+// ループ回数出力用関数
+// loop_num_array に格納されている値を出力(何番目のループか，ループ回数)
+void loop_num_output() {
+  int max = 0;
+
+  for (int i = 0; i < repeat_cnt; i++) {
+      printf("%d 番目, 回数: %d\n", i + 1, loop_num_array[i]);
+      if (loop_num_array[i] > max)
+        max = loop_num_array[i];
+  }
+
+  int hist[max + 1];
+  memset(hist, 0, sizeof(hist));
+
+  for (int i = 0; i < repeat_cnt; i++) {
+      hist[loop_num_array[i]]++;
+  }
+
+  for (int i = 0; i <= max; i++) {
+      if (hist[i] > 0) {
+          printf("ループ回数 %d 回 : %d 回発生\n", i, hist[i]);
+      }
+  }
 }
 
 //#include "log.h"

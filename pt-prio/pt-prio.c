@@ -158,6 +158,7 @@ uint32_t repeat_cnt;
 uint32_t disturb_num;
 unsigned long long *io_start;
 unsigned long long *io_end;
+int *loop_num_array;
 uint32_t io_cnt = 0;
 
 int main(int argc, char *argv[])
@@ -173,6 +174,7 @@ int main(int argc, char *argv[])
   uint32 n;
   int wkc, expected_wkc;
   char fname[128];
+  //sleep(30);
   sprintf(fname, "prior-soem-task-result.csv");
 
   // valiables for test
@@ -181,6 +183,7 @@ int main(int argc, char *argv[])
   disturb_num = atoi(argv[2]);
   io_start = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
   io_end = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
+  loop_num_array = (int*)malloc(sizeof(int) * repeat_cnt);
   if (!io_start || !io_end) {
       perror("malloc");
       return 1;
@@ -249,6 +252,7 @@ int main(int argc, char *argv[])
   printf("\n[INFO] recv cnt: %d\n", global_recv_cnt);
   printf("\n[INFO] send_err cnt:  %d\n", global_send_err_cnt);
   printf("\n[INFO] recv_timout cnt:  %d\n", global_recv_timeout_cnt);
+  loop_num_output();
 
   fieldbus_stop(&fieldbus);
   //close_logfile();

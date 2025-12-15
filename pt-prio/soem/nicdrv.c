@@ -539,6 +539,7 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    int tids_fd = bpf_obj_get("/sys/fs/bpf/priority_tids");
    int flag0 = 0;
    int flag1 = 1;
+   int loop_num = 0;
 
    //get_clock_rdtsc(2);
    // ===========優先区間======================================
@@ -567,17 +568,21 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
          }
       }
       /* wait for both frames to arrive or timeout */
+      loop_num++;
    } while (((wkc <= EC_NOFRAME) || (wkc2 <= EC_NOFRAME)) && !osal_timer_is_expired(timer));
 
    // ポーリング完了時刻取得
    io_end[io_cnt] = __rdtsc();
+
+   // ループ回数をダンプ
+   loop_num_array[io_cnt] = loop_num;
 
    if (pids_fd >= 3 && tids_fd >= 3){
     	     bpf_map_update_elem(pids_fd, &pid, &flag0, BPF_ANY);
     	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
    }
    // ===========優先区間======================================
-   //printf("io_start=%d,io_end=%d\n", io_start[io_cnt], io_end[io_cnt]);
+   //printf("[scx-soem]: disturb_num=%d, io_cnt=%d, io_start=%llu,io_end=%llu\n", disturb_num, io_cnt, io_start[io_cnt], io_end[io_cnt]);
    close(pids_fd);
    close(tids_fd);
 

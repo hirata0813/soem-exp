@@ -539,6 +539,7 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    int tids_fd = bpf_obj_get("/sys/fs/bpf/priority_tids");
    int flag0 = 0;
    int flag1 = 1;
+   int loop_num = 0;
 
    //get_clock_rdtsc(2);
    // ===========優先しない======================================
@@ -567,10 +568,14 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
          }
       }
       /* wait for both frames to arrive or timeout */
+      loop_num++;
    } while (((wkc <= EC_NOFRAME) || (wkc2 <= EC_NOFRAME)) && !osal_timer_is_expired(timer));
 
    // ポーリング完了時刻取得
    io_end[io_cnt] = __rdtsc();
+
+   // ループ回数をダンプ
+   loop_num_array[io_cnt] = loop_num;
 
    if (pids_fd >= 3 && tids_fd >= 3){
     	     bpf_map_update_elem(pids_fd, &pid, &flag0, BPF_ANY);

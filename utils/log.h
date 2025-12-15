@@ -19,6 +19,7 @@ void open_logfile(char *fmt, ...);
 void close_logfile();
 void logfile_printf(char *fmt, ...);
 void logfile_output();
+void loop_num_output();
 
 #endif
 
