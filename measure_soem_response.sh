@@ -18,6 +18,8 @@ PRIORITY_SCHED="scx_priority"
 # 出力ファイル
 OUTPUT_FILE1="simple-soem-task-result.csv"
 OUTPUT_FILE2="prior-soem-task-result.csv"
+OUTPUT_FILE3="simple-soem-task-loop.csv"
+OUTPUT_FILE4="prior-soem-task-loop.csv"
 
 echo "[INIT] Checking and stopping existing processes..."
 
@@ -61,6 +63,13 @@ if [ -e ${OUTPUT_FILE2} ]; then
   sudo rm ${OUTPUT_FILE2}
 fi
 
+if [ -e ${OUTPUT_FILE3} ]; then
+  sudo rm ${OUTPUT_FILE3}
+fi
+
+if [ -e ${OUTPUT_FILE4} ]; then
+  sudo rm ${OUTPUT_FILE4}
+fi
 
 # scx_priorityが動いているか確認
 check_scheduler() {
@@ -150,7 +159,7 @@ main() {
     echo "Starting benchmark with scx_priority scheduler"
 
     # パラメータ配列の定義
-    #disturb_counts=(8)           # infinity_loopの数
+    #disturb_counts=(0 4 8)           # infinity_loopの数
     joined=$(IFS=-; echo "${disturb_counts[*]}") # 出力ファイルの名前用
 
     timestamp=$(TZ=Asia/Tokyo date +%Y%m%d-%H%M%S)
@@ -179,7 +188,7 @@ main() {
 
     	mkdir -p "/home/hirata/soem-logs/simple-soem/${timestamp}-dis-${joined}"
     	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/simple-soem/${timestamp}-dis-${joined}/$OUTPUT_FILE1"
-    else
+    elif [ "$2" -eq "1" ]; then
     	# 計測2(SCX_SOEM)
     	echo ""
     	echo "=============================================="
@@ -198,6 +207,47 @@ main() {
     	
     	mkdir -p "/home/hirata/soem-logs/scx-soem/${timestamp}-dis-${joined}"
     	cp "$OUTPUT_FILE2" "/home/hirata/soem-logs/scx-soem/${timestamp}-dis-${joined}/$OUTPUT_FILE2"
+    elif [ "$2" -eq "2" ]; then
+    	# 計測1(SIMPLE_SOEM)
+    	echo ""
+    	echo "=============================================="
+    	echo "Measure 1: SIMPLE SOEM"
+    	echo "=============================================="
+    	
+    	echo "Testing with ${disturb_count} disturbs"
+
+    	# 各イテレーション(1~10)について測定
+    	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
+    	    check_scheduler 1 1
+    	    run_benchmark 1 1 $disturb_count $iteration $SIMPLE_SOEM
+    	    # スケジーラの停止
+    	    stop_scheduler
+    	done
+    	
+
+    	mkdir -p "/home/hirata/soem-logs/simple-soem/${timestamp}-dis-${joined}"
+    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/simple-soem/${timestamp}-dis-${joined}/$OUTPUT_FILE1"
+
+    	# 計測2(SCX_SOEM)
+    	echo ""
+    	echo "=============================================="
+    	echo "Measure 2: SCX SOEM"
+    	echo "=============================================="
+    	
+    	echo "Testing with ${disturb_count} disturbs"
+
+    	# 各イテレーション(1~10)について測定
+    	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
+    	    check_scheduler 1 1
+    	    run_benchmark 1 1 $disturb_count $iteration $SCX_SOEM
+    	    # スケジーラの停止
+    	    stop_scheduler
+    	done
+    	
+    	mkdir -p "/home/hirata/soem-logs/scx-soem/${timestamp}-dis-${joined}"
+    	cp "$OUTPUT_FILE2" "/home/hirata/soem-logs/scx-soem/${timestamp}-dis-${joined}/$OUTPUT_FILE2"
+    else
+    	echo "Error!!"
     fi
 
     echo "Finished."

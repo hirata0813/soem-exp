@@ -160,6 +160,11 @@ unsigned long long *io_start;
 unsigned long long *io_end;
 int *loop_num_array;
 uint32_t io_cnt = 0;
+uint32_t loop_index = 0;
+unsigned long long *loop_start;
+unsigned long long *loop_end;
+int *poll_num;
+int *poll_ret;
 
 int main(int argc, char *argv[])
 {
@@ -174,7 +179,9 @@ int main(int argc, char *argv[])
   uint32 n;
   int wkc, expected_wkc;
   char fname[128];
+  char loopfilename[128];
   sprintf(fname, "simple-soem-task-result.csv");
+  sprintf(loopfilename, "simple-soem-task-loop.csv");
 
   // valiables for test
   char nic[10] = "eno1";
@@ -183,6 +190,11 @@ int main(int argc, char *argv[])
   io_start = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
   io_end = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
   loop_num_array = (int*)malloc(sizeof(int) * repeat_cnt);
+  loop_start = (double*)malloc(sizeof(unsigned long long) * repeat_cnt * 5);
+  loop_end = (double*)malloc(sizeof(unsigned long long) * repeat_cnt * 5);
+  poll_num = (int*)malloc(sizeof(int) * repeat_cnt * 5);
+  poll_ret = (int*)malloc(sizeof(int) * repeat_cnt * 5);
+
   if (!io_start || !io_end) {
       perror("malloc");
       return 1;
@@ -207,6 +219,15 @@ int main(int argc, char *argv[])
 
     printf("[INFO] Interval: %d (us)\n", interval_usec);
     printf("----- [ Round trip start ] -----\n");
+    loop_index = 0;
+    io_cnt = 0;
+    memset(io_start, 0, sizeof(*io_start));
+    memset(io_end, 0, sizeof(*io_end));
+    memset(loop_num_array, 0, sizeof(*loop_num_array));
+    memset(loop_start, 0, sizeof(*loop_start));
+    memset(loop_end, 0, sizeof(*loop_end));
+    memset(poll_num, 0, sizeof(*poll_num));
+    memset(poll_ret, 0, sizeof(*poll_ret));
 
     // 以下の for ループ内で I/O 処理を担当
     for (i = 0; i < repeat_cnt; ++i)
@@ -251,12 +272,18 @@ int main(int argc, char *argv[])
   printf("\n[INFO] recv cnt: %d\n", global_recv_cnt);
   printf("\n[INFO] send_err cnt:  %d\n", global_send_err_cnt);
   printf("\n[INFO] recv_timout cnt:  %d\n", global_recv_timeout_cnt);
+  loop_info_output(loopfilename);
   loop_num_output();
 
   fieldbus_stop(&fieldbus);
   //close_logfile();
   free(io_start);
   free(io_end);
+  free(loop_num_array);
+  free(loop_start);
+  free(loop_end);
+  free(poll_num);
+  free(poll_ret);
 
   return 0;
 }

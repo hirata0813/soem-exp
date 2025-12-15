@@ -1,5 +1,5 @@
 #include "log.h"
-#include "../pt/common.h"
+#include "../pt-prio/common.h"
 #include "string.h"
 const unsigned long long CPU_FREQ_HZ = 3500000000UL;
 
@@ -54,13 +54,27 @@ void logfile_output(char *fname) {
   fclose(fp);
 }
 
+// ループ情報出力用関数
+// あるn回目のループについて，そのループにかかった時間，ppoll が完了したか，そのループは何回目のポーリングか，の3つの情報を出力
+void loop_info_output(char *loopfilename) {
+  FILE *fp = fopen(loopfilename,"a");
+  if (fp == NULL) {
+      perror("fopen failed");
+      return;
+  }
+  for (int i = 0; i < loop_index; i++) {
+      fprintf(fp, "%d, %.9f, %d, %d, %d\n", i + 1, (loop_end[i] - loop_start[i]) / (double)CPU_FREQ_HZ, poll_ret[i], poll_num[i], disturb_num);
+      //printf("%d 番目, 回数: %d\n", i + 1, loop_num_array[i]);
+  }
+}
+
 // ループ回数出力用関数
 // loop_num_array に格納されている値を出力(何番目のループか，ループ回数)
 void loop_num_output() {
   int max = 0;
 
   for (int i = 0; i < repeat_cnt; i++) {
-      printf("%d 番目, 回数: %d\n", i + 1, loop_num_array[i]);
+      //printf("%d 番目, 回数: %d\n", i + 1, loop_num_array[i]);
       if (loop_num_array[i] > max)
         max = loop_num_array[i];
   }

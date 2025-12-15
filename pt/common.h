@@ -8,4 +8,10 @@ extern unsigned long long *io_start;
 extern unsigned long long *io_end;
 extern int *loop_num_array;
 
+extern unsigned long long *loop_start;
+extern unsigned long long *loop_end;
+extern int *poll_num;
+extern int *poll_ret;
+extern uint32_t loop_index;
+
 #endif

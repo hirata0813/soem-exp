@@ -509,6 +509,7 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    int wkc = EC_NOFRAME;
    int wkc2 = EC_NOFRAME;
    int primrx, secrx;
+   const unsigned long long CPU_FREQ_HZ = 3500000000UL;
 
    /* if not in redundant mode then always assume secondary is OK */
    if (port->redstate == ECT_RED_NONE)
@@ -551,6 +552,7 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    io_start[io_cnt] = __rdtsc();
    do
    {
+      loop_start[loop_index] = __rdtsc();
       poll_err = ppoll(fdsp, pollcnt, &timeout_spec, NULL);
       //get_clock_rdtsc(3);
 
@@ -568,7 +570,12 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
          }
       }
       /* wait for both frames to arrive or timeout */
+      loop_end[loop_index] = __rdtsc();
+      poll_num[loop_index] = io_cnt;
+      poll_ret[loop_index] = poll_err;
+      //printf("elapsed=%.9f, poll_num=%d, poll_ret=%d\n", (loop_end[loop_index] - loop_start[loop_index]) / (double)CPU_FREQ_HZ, poll_num[loop_index], poll_ret[loop_index]);
       loop_num++;
+      loop_index++;
    } while (((wkc <= EC_NOFRAME) || (wkc2 <= EC_NOFRAME)) && !osal_timer_is_expired(timer));
 
    // ポーリング完了時刻取得
