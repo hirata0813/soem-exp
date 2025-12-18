@@ -63,7 +63,7 @@ void loop_info_output(char *loopfilename) {
       return;
   }
   for (int i = 0; i < loop_index; i++) {
-      fprintf(fp, "%d, %.9f, %d, %d, %d\n", i + 1, (loop_end[i] - loop_start[i]) / (double)CPU_FREQ_HZ, poll_ret[i], poll_num[i], disturb_num);
+      fprintf(fp, "%d,%.9f,%d,%d,%d\n", i + 1, (loop_end[i] - loop_start[i]) / (double)CPU_FREQ_HZ, poll_ret[i], poll_num[i] + 1, disturb_num);
       //printf("%d 番目, 回数: %d\n", i + 1, loop_num_array[i]);
   }
 }
