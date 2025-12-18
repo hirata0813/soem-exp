@@ -165,6 +165,9 @@ unsigned long long *loop_start;
 unsigned long long *loop_end;
 int *poll_num;
 int *poll_ret;
+unsigned long long soem_start;
+unsigned long long soem_end;
+extern const unsigned long long CPU_FREQ_HZ;
 
 int main(int argc, char *argv[])
 {
@@ -181,8 +184,6 @@ int main(int argc, char *argv[])
   char fname[128];
   char loopfilename[128];
   //sleep(30);
-  sprintf(fname, "prior-soem-task-result.csv");
-  sprintf(loopfilename, "prior-soem-task-loop.csv");
 
   // valiables for test
   char nic[10] = "eno1";
@@ -190,11 +191,12 @@ int main(int argc, char *argv[])
   disturb_num = atoi(argv[2]);
   io_start = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
   io_end = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
-  loop_num_array = (int*)malloc(sizeof(int) * repeat_cnt);
-  loop_start = (double*)malloc(sizeof(unsigned long long) * repeat_cnt * 5);
-  loop_end = (double*)malloc(sizeof(unsigned long long) * repeat_cnt * 5);
-  poll_num = (int*)malloc(sizeof(int) * repeat_cnt * 5);
-  poll_ret = (int*)malloc(sizeof(int) * repeat_cnt * 5);
+  //loop_num_array = (int*)malloc(sizeof(int) * repeat_cnt);
+  //loop_start = (double*)malloc(sizeof(unsigned long long) * repeat_cnt * 5);
+  //loop_end = (double*)malloc(sizeof(unsigned long long) * repeat_cnt * 5);
+  //poll_num = (int*)malloc(sizeof(int) * repeat_cnt * 5);
+  //poll_ret = (int*)malloc(sizeof(int) * repeat_cnt * 5);
+  sprintf(fname, "prior-soem-task-result.csv");
 
   if (!io_start || !io_end) {
       perror("malloc");
@@ -225,11 +227,12 @@ int main(int argc, char *argv[])
     io_cnt = 0;
     memset(io_start, 0, sizeof(*io_start));
     memset(io_end, 0, sizeof(*io_end));
-    memset(loop_num_array, 0, sizeof(*loop_num_array));
-    memset(loop_start, 0, sizeof(*loop_start));
-    memset(loop_end, 0, sizeof(*loop_end));
-    memset(poll_num, 0, sizeof(*poll_num));
-    memset(poll_ret, 0, sizeof(*poll_ret));
+    //memset(loop_num_array, 0, sizeof(*loop_num_array));
+    //memset(loop_start, 0, sizeof(*loop_start));
+    //memset(loop_end, 0, sizeof(*loop_end));
+    //memset(poll_num, 0, sizeof(*poll_num));
+    //memset(poll_ret, 0, sizeof(*poll_ret));
+    soem_start = __rdtsc();
     // 以下の for ループ内で I/O 処理を担当
     for (i = 0; i < repeat_cnt; ++i)
     {
@@ -257,6 +260,7 @@ int main(int argc, char *argv[])
 
       osal_usleep(interval_usec);
     }
+    soem_end = __rdtsc();
 
   }
 
@@ -268,23 +272,24 @@ int main(int argc, char *argv[])
   }
   logfile_output(fname);
 
+  double soem_loop_elapsed = (soem_end - soem_start) / (double)CPU_FREQ_HZ;
   printf("\nio_cnt == repeat_cnt!\n");
   printf("\n[INFO] send cnt: %d\n", global_send_cnt);
   printf("\n[INFO] recv cnt: %d\n", global_recv_cnt);
   printf("\n[INFO] send_err cnt:  %d\n", global_send_err_cnt);
   printf("\n[INFO] recv_timout cnt:  %d\n", global_recv_timeout_cnt);
-  loop_info_output(loopfilename);
-  loop_num_output();
+  //loop_info_output(loopfilename);
+  //loop_num_output();
 
-  //printf("loop_index=%d\n", loop_index);
+  printf("soem-loop: %.9f\n", soem_loop_elapsed);
   fieldbus_stop(&fieldbus);
   //close_logfile();
   free(io_start);
   free(io_end);
-  free(loop_num_array);
-  free(loop_start);
-  free(loop_end);
-  free(poll_num);
-  free(poll_ret);
+  //free(loop_num_array);
+  //free(loop_start);
+  //free(loop_end);
+  //free(poll_num);
+  //free(poll_ret);
   return 0;
 }
