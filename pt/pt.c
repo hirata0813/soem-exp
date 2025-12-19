@@ -281,6 +281,40 @@ int main(int argc, char *argv[])
   //loop_num_output();
 
   printf("soem-loop: %.9f\n", soem_loop_elapsed);
+
+  // 以降は，規定の仕事が終わった後用に，外乱として動き続けるための処理
+  printf("redundant processing start\n");
+  while(1){
+   int i, min_time, max_time;
+   min_time = max_time = 0;
+
+   context = &(fieldbus.context);
+   grp = context->grouplist + fieldbus.group;
+
+   loop_index = 0;
+   io_cnt = 0;
+   memset(io_start, 0, sizeof(*io_start));
+   memset(io_end, 0, sizeof(*io_end));
+
+   // 以下の for ループ内で I/O 処理を担当
+   soem_start = __rdtsc();
+   for (i = 0; i < repeat_cnt; ++i)
+   {
+     ecx_send_processdata(context);
+     wkc = ecx_receive_processdata(context, EC_TIMEOUTRET);
+
+     expected_wkc = grp->outputsWKC * 2 + grp->inputsWKC;
+     if (wkc == EC_NOFRAME)
+     {
+         break;
+     }
+     io_cnt++;
+
+     osal_usleep(interval_usec);
+   }
+   soem_end = __rdtsc();
+  }
+
   fieldbus_stop(&fieldbus);
   //close_logfile();
   free(io_start);
