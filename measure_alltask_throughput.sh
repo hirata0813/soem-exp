@@ -7,6 +7,7 @@
 # 設定
 SIMPLE_SOEM="./pt/pt"
 SCX_SOEM="./pt-prio/pt-prio"
+WHOLE_SCX_SOEM="./pt-prio-whole/pt-prio-whole"
 COTASK="./co-task"
 ITERATIONS=1
 
@@ -112,13 +113,19 @@ cleanup() {
     # 優先方式によって，保存するファイル名を変える 
     if [ "$prior_method" -eq "0" ]; then
         mkdir -p "/home/hirata/soem-logs/throughput/base/${timestamp}-cotask-${cotask_count}"
-        cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/base/${timestamp}-cotask-${joined}/$OUTPUT_FILE1"
+        cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/base/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
     elif [ "$prior_method" -eq "1" ]; then
         mkdir -p "/home/hirata/soem-logs/throughput/part-prior/${timestamp}-cotask-${cotask_count}"
-        cp "$OUTPUT_FILE2" "/home/hirata/soem-logs/throughput/part-prior/${timestamp}-cotask-${joined}/$OUTPUT_FILE2"
+        cp "$OUTPUT_FILE2" "/home/hirata/soem-logs/throughput/part-prior/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE2"
     elif [ "$prior_method" -eq "2" ]; then
-        mkdir -p "/home/hirata/soem-logs/throughput/whole-prior/${timestamp}-cotask-${cotask_count}"
-        cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/whole-prior/${timestamp}-cotask-${joined}/$OUTPUT_FILE3"
+    	mkdir -p "/home/hirata/soem-logs/throughput/whole-prior/nice/sched_other/${timestamp}-cotask-${cotask_count}"
+    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/whole-prior/nice/sched_other/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
+    elif [ "$prior_method" -eq "3" ]; then
+    	mkdir -p "/home/hirata/soem-logs/throughput/whole-prior/sched_fifo/${timestamp}-cotask-${cotask_count}"
+    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/whole-prior/sched_fifo/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
+    elif [ "$prior_method" -eq "4" ]; then
+    	mkdir -p "/home/hirata/soem-logs/throughput/whole-prior/scx_whole/${timestamp}-cotask-${cotask_count}"
+    	cp "$OUTPUT_FILE3" "/home/hirata/soem-logs/throughput/whole-prior/scx_whole/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE3"
     else
     	echo "Copy Error!!"
     fi
@@ -172,33 +179,140 @@ run_benchmark() {
     
     declare -a pids
 
-    # 共存 開始（CPUバウンドなバックグラウンドタスク）
-    for ((i=1; i<=$cotask_count; i++)); do
-        $COTASK &
-        cotask_pid=$!
-        echo "  -> cotask $i PID: $cotask_pid"
-        pids+=($cotask_pid)
-	sleep 0.1
-    done
+    if [ "$prior_method" -eq "0" ]; then
+    	# 計測1(ベース実行時間)
 
-    sleep 0.1
+        # 共存タスク開始
+        for ((i=1; i<=$cotask_count; i++)); do
+            $COTASK &
+            cotask_pid=$!
+            echo "  -> cotask $i PID: $cotask_pid"
+            pids+=($cotask_pid)
+	        sleep 0.1
+        done
+        sleep 0.1
+        # SOEM タスク開始
+        sudo $benchmark 10000 $cotask_count &
+        soem_pid=$!
+        echo "  -> soem PID: $soem_pid"
+        pids+=($soem_pid)
 
-    
-    # SOEM タスク開始
-    sudo $benchmark 10000 $cotask_count &
-    soem_pid=$!
-    echo "  -> soem PID: $soem_pid"
-    pids+=($soem_pid)
+        # 配列の要素数を取得
+        pids_length=${#pids[@]}
 
-    # 配列の要素数を取得
-    pids_length=${#pids[@]}
+        # 全てのタスクの完了を待つ
+        echo "Waiting for all tasks to complete..."
+        for pid in "${pids[@]}"; do
+            wait $pid 2>/dev/null
+        done
+    elif [ "$prior_method" -eq "1" ]; then
+    	# 計測2(部分優先実行)
 
-    # 全てのタスクの完了を待つ
-    echo "Waiting for all tasks to complete..."
-    for pid in "${pids[@]}"; do
-        wait $pid 2>/dev/null
-    done
-    
+        # 共存タスク開始
+        for ((i=1; i<=$cotask_count; i++)); do
+            $COTASK &
+            cotask_pid=$!
+            echo "  -> cotask $i PID: $cotask_pid"
+            pids+=($cotask_pid)
+	        sleep 0.1
+        done
+        sleep 0.1
+        # SOEM タスク開始
+        sudo $benchmark 10000 $cotask_count &
+        soem_pid=$!
+        echo "  -> soem PID: $soem_pid"
+        pids+=($soem_pid)
+
+        # 配列の要素数を取得
+        pids_length=${#pids[@]}
+
+        # 全てのタスクの完了を待つ
+        echo "Waiting for all tasks to complete..."
+        for pid in "${pids[@]}"; do
+            wait $pid 2>/dev/null
+        done
+    elif [ "$prior_method" -eq "2" ]; then
+    	# 計測3(nice)
+
+        # 共存タスク開始
+        for ((i=1; i<=$cotask_count; i++)); do
+            taskset -c 0 $COTASK &
+            cotask_pid=$!
+            echo "  -> cotask $i PID: $cotask_pid"
+            pids+=($cotask_pid)
+	        sleep 0.1
+        done
+        sleep 0.1
+        # SOEM タスク開始
+        sudo taskset -c 0 nice -n -20 $benchmark 10000 $cotask_count &
+        soem_pid=$!
+        echo "  -> soem PID: $soem_pid"
+        pids+=($soem_pid)
+
+        # 配列の要素数を取得
+        pids_length=${#pids[@]}
+
+        # 全てのタスクの完了を待つ
+        echo "Waiting for all tasks to complete..."
+        for pid in "${pids[@]}"; do
+            wait $pid 2>/dev/null
+        done
+    elif [ "$prior_method" -eq "3" ]; then
+    	# 計測4(SCHED_FIFO)
+
+        # 共存タスク開始
+        for ((i=1; i<=$cotask_count; i++)); do
+            taskset -c 0 $COTASK &
+            cotask_pid=$!
+            echo "  -> cotask $i PID: $cotask_pid"
+            pids+=($cotask_pid)
+	        sleep 0.1
+        done
+        sleep 0.1
+        # SOEM タスク開始
+        sudo taskset -c 0 chrt -f 99 $benchmark 10000 $cotask_count &
+        soem_pid=$!
+        echo "  -> soem PID: $soem_pid"
+        pids+=($soem_pid)
+
+        # 配列の要素数を取得
+        pids_length=${#pids[@]}
+
+        # 全てのタスクの完了を待つ
+        echo "Waiting for all tasks to complete..."
+        for pid in "${pids[@]}"; do
+            wait $pid 2>/dev/null
+        done
+    elif [ "$prior_method" -eq "4" ]; then
+    	# 計測5(sched_ext 最初から最後まで)
+
+        # 共存タスク開始
+        for ((i=1; i<=$cotask_count; i++)); do
+            $COTASK &
+            cotask_pid=$!
+            echo "  -> cotask $i PID: $cotask_pid"
+            pids+=($cotask_pid)
+	        sleep 0.1
+        done
+        sleep 0.1
+        # SOEM タスク開始
+        sudo perf stat $benchmark 10000 $cotask_count &
+        soem_pid=$!
+        echo "  -> soem PID: $soem_pid"
+        pids+=($soem_pid)
+
+        # 配列の要素数を取得
+        pids_length=${#pids[@]}
+
+        # 全てのタスクの完了を待つ
+        echo "Waiting for all tasks to complete..."
+        for pid in "${pids[@]}"; do
+            wait $pid 2>/dev/null
+        done
+    else
+    	echo "Error!!"
+    fi
+
     echo "All tasks completed for iteration $iteration with $cotask_count cotasks"
 }
 
@@ -214,6 +328,7 @@ main() {
 
     echo "cotask_num,elapsed" > $OUTPUT_FILE1
     echo "cotask_num,elapsed" > $OUTPUT_FILE2
+    echo "cotask_num,elapsed" > $OUTPUT_FILE3
 
     if [ "$prior_method" -eq "0" ]; then
     	# 計測1(ベース実行時間)
@@ -255,7 +370,7 @@ main() {
     	mkdir -p "/home/hirata/soem-logs/scx-soem/${timestamp}-cotask-${joined}"
     	cp "$OUTPUT_FILE2" "/home/hirata/soem-logs/scx-soem/${timestamp}-cotask-${joined}/$OUTPUT_FILE2"
     elif [ "$prior_method" -eq "2" ]; then
-    	# 計測3(全体優先実行)
+    	# 計測3(nice)
     	echo ""
     	echo "=============================================="
     	echo "Measure 3: 全体優先実行(nice コマンド)"
@@ -265,15 +380,53 @@ main() {
 
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
-    	    check_scheduler 1 1
+    	    #check_scheduler 1 1
     	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_SOEM
     	    # スケジーラの停止
     	    stop_scheduler
     	done
     	
 
-    	mkdir -p "/home/hirata/soem-logs/simple-soem/${timestamp}-cotask-${joined}"
-    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/simple-soem/${timestamp}-cotask-${joined}/$OUTPUT_FILE1"
+    	mkdir -p "/home/hirata/soem-logs/simple-soem/nice/${timestamp}-cotask-${joined}"
+    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/simple-soem/nice/${timestamp}-cotask-${joined}/$OUTPUT_FILE1"
+    elif [ "$prior_method" -eq "3" ]; then
+    	# 計測4(SCHED_FIFO)
+    	echo ""
+    	echo "=============================================="
+    	echo "Measure 4: 全体優先実行(SCHED_FIFO)"
+    	echo "=============================================="
+    	
+    	echo "Testing with ${cotask_count} cotasks"
+
+    	# 各イテレーション(1~10)について測定
+    	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
+    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_SOEM
+    	    # スケジーラの停止
+    	    stop_scheduler
+    	done
+    	
+
+    	mkdir -p "/home/hirata/soem-logs/simple-soem/sched_fifo/${timestamp}-cotask-${joined}"
+    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/simple-soem/sched_fifo/${timestamp}-cotask-${joined}/$OUTPUT_FILE1"
+    elif [ "$prior_method" -eq "4" ]; then
+    	# 計測5(sched_ext 最初から最後まで)
+    	echo ""
+    	echo "=============================================="
+    	echo "Measure 5: 全体優先実行(sched_ext 最初から最後まで)"
+    	echo "=============================================="
+    	
+    	echo "Testing with ${cotask_count} cotasks"
+
+    	# 各イテレーション(1~10)について測定
+    	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
+    	    check_scheduler 1 1
+    	    run_benchmark 1 1 $cotask_count $iteration $WHOLE_SCX_SOEM
+    	    # スケジーラの停止
+    	    stop_scheduler
+    	done
+
+    	mkdir -p "/home/hirata/soem-logs/simple-soem/scx_whole/${timestamp}-cotask-${joined}"
+    	cp "$OUTPUT_FILE3" "/home/hirata/soem-logs/simple-soem/scx_whole/${timestamp}-cotask-${joined}/$OUTPUT_FILE3"
     else
     	echo "Error!!"
     fi
