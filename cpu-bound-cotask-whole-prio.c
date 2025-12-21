@@ -61,6 +61,9 @@ int main(int argc, char *argv[]) {
     
 
     efd = eventfd(0, 0);
+    if (tids_fd >= 3){
+         bpf_map_update_elem(tids_fd, &tid, &flag1, BPF_ANY);
+    }
     while (sum <= threshold) {
         loop_preprocess = __rdtsc();
         // CPU バウンド処理
@@ -80,9 +83,6 @@ int main(int argc, char *argv[]) {
         pthread_create(&th, NULL, writer_thread, NULL);
         int poll_loop = 0;
 
-        if (tids_fd >= 3){
-             bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
-        }
         do {
             unsigned long long ppoll_start = __rdtsc();
             ret = ppoll(&pfd, 1, &timeout, NULL);
@@ -90,9 +90,6 @@ int main(int argc, char *argv[]) {
             //printf("ppoll 処理=%.9f\n", (ppoll_end - ppoll_start) / (double)CPU_FREQ_HZ);
             poll_loop++;
         } while (ret == 0);   /* timeout → retry */
-        if (tids_fd >= 3){
-             bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
-        }
 
         if (ret > 0 && (pfd.revents & POLLIN)) {
             uint64_t val;
@@ -103,6 +100,9 @@ int main(int argc, char *argv[]) {
         /* スレッド回収 */
         pthread_join(th, NULL);
         printf("CPU 処理=%.9f,I/O 処理=%.9f, ppoll 回数=%d\n", (loop_start - loop_preprocess) / (double)CPU_FREQ_HZ, (loop_end - loop_start) / (double)CPU_FREQ_HZ, poll_loop);
+    }
+    if (tids_fd >= 3){
+         bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
     }
 
 

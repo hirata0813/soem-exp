@@ -22,7 +22,6 @@ int main(int argc, char *argv[]) {
     volatile unsigned long long sum = 0;
     int pid = getpid();
     int tid = syscall(SYS_gettid);
-    int pids_fd = bpf_obj_get("/sys/fs/bpf/priority_pids");
     int tids_fd = bpf_obj_get("/sys/fs/bpf/priority_tids");
     int flag0 = 0;
     unsigned long long loop_start;
@@ -37,8 +36,7 @@ int main(int argc, char *argv[]) {
     //sa.sa_flags = 0;
     //sigaction(SIGINT, &sa, NULL);
     
-    if (pids_fd >= 3 && tids_fd >= 3){
-         bpf_map_update_elem(pids_fd, &pid, &flag0, BPF_ANY);
+    if (tids_fd >= 3){
          bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
     }
 

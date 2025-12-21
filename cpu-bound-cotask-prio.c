@@ -20,6 +20,8 @@ int efd;
 /* 書き込みスレッド */
 void *writer_thread(void *arg)
 {
+    int pid = getpid();
+    int tid = syscall(SYS_gettid);
     char buf[1024 * 1024];
     FILE *f = fopen("testfile", "wb");
 
@@ -81,7 +83,7 @@ int main(int argc, char *argv[]) {
         int poll_loop = 0;
 
         if (tids_fd >= 3){
-             bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+             bpf_map_update_elem(tids_fd, &tid, &flag1, BPF_ANY);
         }
         do {
             unsigned long long ppoll_start = __rdtsc();

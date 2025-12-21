@@ -535,7 +535,6 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
 
    int pid = getpid();
    int tid = syscall(SYS_gettid);
-   int pids_fd = bpf_obj_get("/sys/fs/bpf/priority_pids");
    int tids_fd = bpf_obj_get("/sys/fs/bpf/priority_tids");
    int flag0 = 0;
    int flag1 = 1;
@@ -543,8 +542,7 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
 
    //get_clock_rdtsc(2);
    // ===========優先しない======================================
-   if (pids_fd >= 3 && tids_fd >= 3){
-    	     bpf_map_update_elem(pids_fd, &pid, &flag0, BPF_ANY);
+   if (tids_fd >= 3){
     	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
    }
    // ポーリング開始時刻取得
@@ -574,13 +572,11 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    // ポーリング完了時刻取得
    io_end[io_cnt] = __rdtsc();
 
-   if (pids_fd >= 3 && tids_fd >= 3){
-    	     bpf_map_update_elem(pids_fd, &pid, &flag0, BPF_ANY);
+   if (tids_fd >= 3){
     	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
    }
    // ===========優先しない======================================
    //printf("io_start=%d,io_end=%d\n", io_start[io_cnt], io_end[io_cnt]);
-   close(pids_fd);
    close(tids_fd);
 
 

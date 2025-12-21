@@ -211,7 +211,6 @@ int main(int argc, char *argv[])
   int interval_usec = 20;
   int pid = getpid();
   int tid = syscall(SYS_gettid);
-  int pids_fd = bpf_obj_get("/sys/fs/bpf/priority_pids");
   int tids_fd = bpf_obj_get("/sys/fs/bpf/priority_tids");
   int flag0 = 0;
   int flag1 = 1;
@@ -244,8 +243,7 @@ int main(int argc, char *argv[])
     //memset(poll_num, 0, sizeof(*poll_num));
     //memset(poll_ret, 0, sizeof(*poll_ret));
 
-    if (pids_fd >= 3 && tids_fd >= 3){
-    	     bpf_map_update_elem(pids_fd, &pid, &flag1, BPF_ANY);
+    if (tids_fd >= 3){
     	     bpf_map_update_elem(tids_fd, &tid, &flag1, BPF_ANY);
     }
     soem_start = __rdtsc();
@@ -277,8 +275,7 @@ int main(int argc, char *argv[])
       osal_usleep(interval_usec);
     }
     soem_end = __rdtsc();
-   if (pids_fd >= 3 && tids_fd >= 3){
-    	     bpf_map_update_elem(pids_fd, &pid, &flag0, BPF_ANY);
+   if (tids_fd >= 3){
     	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
    }
 
@@ -303,7 +300,6 @@ int main(int argc, char *argv[])
 
   printf("soem-loop: %.9f\n", soem_loop_elapsed);
   fieldbus_stop(&fieldbus);
-  close(pids_fd);
   close(tids_fd);
   //close_logfile();
   free(io_start);
