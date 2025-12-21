@@ -20,11 +20,18 @@ int efd;
 /* 書き込みスレッド */
 void *writer_thread(void *arg)
 {
+    int tids_fd = bpf_obj_get("/sys/fs/bpf/priority_tids");
     int pid = getpid();
     int tid = syscall(SYS_gettid);
     char buf[1024 * 1024];
     FILE *f = fopen("testfile", "wb");
+    int flag0 = 0;
+    int flag2 = 2;
+    int sum = 0;
 
+    if (tids_fd >= 3){
+         bpf_map_update_elem(tids_fd, &tid, &flag2, BPF_ANY);
+    }
     // 大体1sくらいかかるI/Oにする
     fwrite(buf, 1, sizeof(buf), f);
     fflush(f);	
@@ -35,7 +42,11 @@ void *writer_thread(void *arg)
     write(efd, &one, sizeof(one));
 
     fclose(f);
+    close(tids_fd);
     remove("testfile");
+    if (tids_fd >= 3){
+         bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+    }
     return NULL;
 }
 
@@ -63,6 +74,9 @@ int main(int argc, char *argv[]) {
     
 
     efd = eventfd(0, 0);
+    if (tids_fd >= 3){
+         bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+    }
     while (sum <= threshold) {
         loop_preprocess = __rdtsc();
         // CPU バウンド処理
