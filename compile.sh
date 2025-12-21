@@ -8,6 +8,14 @@ clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall co
 clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall -c cpu-bound-cotask.c -o cpu-bound-cotask.o
 clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall cpu-bound-cotask.o -o cpu-bound-cotask -lbpf
 
+clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall -c cpu-bound-cotask-prio.c -o cpu-bound-cotask-prio.o
+clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall cpu-bound-cotask-prio.o -o cpu-bound-cotask-prio -lbpf
+
+clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall -c cpu-bound-cotask-whole-prio.c -o cpu-bound-cotask-whole-prio.o
+clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall cpu-bound-cotask-whole-prio.o -o cpu-bound-cotask-whole-prio -lbpf
+
 rm infinityloop.o
 rm co-task.o
 rm cpu-bound-cotask.o
+rm cpu-bound-cotask-prio.o
+rm cpu-bound-cotask-whole-prio.o

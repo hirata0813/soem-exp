@@ -17,6 +17,21 @@
 /* eventfd */
 int efd;
 
+void logfile_output(char *fname, unsigned long long *loop_start, unsigned long long *loop_end, const unsigned long long CPU_FREQ_HZ, int cotask_num) {
+  FILE *fp = fopen(fname,"a");
+  if (fp == NULL) {
+      perror("fopen failed");
+      return;
+  }
+  double elapsed = 0.0;
+
+  for (int i = 0; i < 10; i++) {
+        elapsed = (loop_end[i] - loop_start[i]) / (double)CPU_FREQ_HZ;
+        fprintf(fp, "%d,%.9f\n", cotask_num, elapsed);
+  }
+  fclose(fp);
+}
+
 /* 書き込みスレッド */
 void *writer_thread(void *arg)
 {
@@ -57,12 +72,18 @@ int main(int argc, char *argv[]) {
     int tids_fd = bpf_obj_get("/sys/fs/bpf/priority_tids");
     int flag0 = 0;
     int flag1 = 1;
-    unsigned long long loop_start;
-    unsigned long long loop_end;
-    unsigned long long loop_preprocess;
+    unsigned long long task_start;
+    unsigned long long task_end;
+    unsigned long long *loop_start;
+    unsigned long long *loop_end;
+    loop_start = (double*)malloc(sizeof(unsigned long long) * 10);
+    loop_end = (double*)malloc(sizeof(unsigned long long) * 10);
     const unsigned long long CPU_FREQ_HZ = 3500000000UL;
     const unsigned long long threshold = 41695550000UL; // 非競合時は，これで大体1分
     const unsigned long long oneshot_threshold = threshold / 10;
+    int cotask_num = atoi(argv[1]);
+    char fname[128];
+    sprintf(fname, "simple-cpu-bound-task-result.csv");
 
     volatile unsigned long long i = 0;
 
@@ -77,19 +98,69 @@ int main(int argc, char *argv[]) {
     if (tids_fd >= 3){
          bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
     }
-
+    int idx = 0;
+    task_start = __rdtsc();
     while (sum <= threshold) {
-        loop_preprocess = __rdtsc();
         // CPU バウンド処理
         i = 0;
         while(i <= oneshot_threshold) {
             i++;
         }
         sum+=i;
-        loop_start = __rdtsc();
 
         // I/O 処理(ppoll によるポーリング)
         // この区間のみ優先(競合時にここの応答性がどうなるか見る)
+        int ret;
+        pfd.fd = efd;
+        pfd.events = POLLIN;
+        pthread_t th;
+        pthread_create(&th, NULL, writer_thread, NULL);
+        int poll_loop = 0;
+
+        loop_start[idx] = __rdtsc();
+        if (tids_fd >= 3){
+             bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+        }
+        do {
+            unsigned long long ppoll_start = __rdtsc();
+            ret = ppoll(&pfd, 1, &timeout, NULL);
+            unsigned long long ppoll_end = __rdtsc();
+            //printf("ppoll 処理=%.9f\n", (ppoll_end - ppoll_start) / (double)CPU_FREQ_HZ);
+            poll_loop++;
+        } while (ret == 0);   /* timeout → retry */
+        loop_end[idx] = __rdtsc();
+
+        if (tids_fd >= 3){
+             bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+        }
+
+        if (ret > 0 && (pfd.revents & POLLIN)) {
+            uint64_t val;
+            read(efd, &val, sizeof(val));
+        }
+
+        /* スレッド回収 */
+        pthread_join(th, NULL);
+        idx++;
+    }
+    task_end = __rdtsc();
+    printf("cpu-bound-cotask 全体: %.9f\n", (task_end - task_start) / (double)CPU_FREQ_HZ);
+
+    // 各ポーリングの応答時間をファイル出力
+    logfile_output(fname, loop_start, loop_end, CPU_FREQ_HZ, cotask_num);
+
+    printf("redundant process\n");
+
+    // 冗長処理
+    while (1) {
+        sum=0;
+        // CPU バウンド処理
+        i = 0;
+        while(i <= oneshot_threshold) {
+            i++;
+        }
+        sum+=i;
+
         int ret;
         pfd.fd = efd;
         pfd.events = POLLIN;
@@ -115,21 +186,11 @@ int main(int argc, char *argv[]) {
             uint64_t val;
             read(efd, &val, sizeof(val));
         }
-        loop_end = __rdtsc();
-
         /* スレッド回収 */
         pthread_join(th, NULL);
-        printf("CPU 処理=%.9f,I/O 処理=%.9f, ppoll 回数=%d\n", (loop_start - loop_preprocess) / (double)CPU_FREQ_HZ, (loop_end - loop_start) / (double)CPU_FREQ_HZ, poll_loop);
     }
-
-
-    //printf("pid = %d, elapsed = %.9f\n", pid, (loop_end - loop_start) / (double)CPU_FREQ_HZ);
-    printf("redundant process\n");
-
-    // 冗長処理
-    while (1) {
-        sum++;
-    }
+    free(loop_start);
+    free(loop_end);
     close(efd);
 
     return 0;
