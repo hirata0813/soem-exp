@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     loop_start = (double*)malloc(sizeof(unsigned long long) * 10);
     loop_end = (double*)malloc(sizeof(unsigned long long) * 10);
     const unsigned long long CPU_FREQ_HZ = 3500000000UL;
-    const unsigned long long threshold = 41695550000UL; // 非競合時は，これで大体1分
+    const unsigned long long threshold = 41100550000UL; // 非競合時は，これで大体1分
     const unsigned long long oneshot_threshold = threshold / 10;
     int cotask_num = atoi(argv[1]);
     char fname[128];
