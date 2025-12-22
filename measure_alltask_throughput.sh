@@ -11,6 +11,9 @@ WHOLE_SCX_SOEM="./pt-prio-whole/pt-prio-whole"
 COTASK="./co-task"
 ITERATIONS=1
 
+SCX_CPUBOUND_TASK="./cpu-bound-cotask-prio"
+SIMPLE_CPUBOUND_TASK="./cpu-bound-cotask"
+WHOLE_SCX_CPUBOUND_TASK="./cpu-bound-cotask-whole-prio"
 # 共存タスクの数
 cotask_count="$1"
 
@@ -19,9 +22,9 @@ prior_method="$2"
 PRIORITY_SCHED="scx_priority"
 
 # 出力ファイル
-OUTPUT_FILE1="simple-soem-task-result.csv"
-OUTPUT_FILE2="prior-soem-task-result.csv"
-OUTPUT_FILE3="whole-prior-soem-task-result.csv"
+OUTPUT_FILE1="simple-cpu-bound-task-result.csv"
+OUTPUT_FILE2="prior-cpu-bound-task-result.csv"
+OUTPUT_FILE3="whole-prior-cpu-bound-task-result.csv"
 
 echo "[INIT] Checking and stopping existing processes..."
 
@@ -39,17 +42,21 @@ if pgrep -f "co-task" > /dev/null; then
     sleep 1
 fi
 
-# SIMPLE_SOEM (pt)
-if pgrep -f "./pt/pt" > /dev/null; then
-    echo "Stopping existing pt (simple soem)..."
-    sudo pkill -f "./pt/pt"
+if pgrep -f "./cpu-bound-cotask-prio" > /dev/null; then
+    echo "Stopping existing cpu-bound-cotask-prio..."
+    sudo pkill -f "./cpu-bound-cotask-prio"
     sleep 1
 fi
 
-# SCX_SOEM (pt-prio)
-if pgrep -f "./pt-prio/pt-prio" > /dev/null; then
-    echo "Stopping existing pt-prio (scx soem)..."
-    sudo pkill -f "./pt-prio/pt-prio"
+if pgrep -f "./cpu-bound-cotask" > /dev/null; then
+    echo "Stopping existing cpu-bound-cotask..."
+    sudo pkill -f "./cpu-bound-cotask"
+    sleep 1
+fi
+
+if pgrep -f "./cpu-bound-cotask-whole-prio" > /dev/null; then
+    echo "Stopping existing cpu-bound-cotask-whole-prio..."
+    sudo pkill -f "./cpu-bound-cotask-whole-prio"
     sleep 1
 fi
 
@@ -63,6 +70,10 @@ fi
 
 if [ -e ${OUTPUT_FILE2} ]; then
   sudo rm ${OUTPUT_FILE2}
+fi
+
+if [ -e ${OUTPUT_FILE3} ]; then
+  sudo rm ${OUTPUT_FILE3}
 fi
 
 # ==============================
@@ -112,20 +123,20 @@ cleanup() {
 
     # 優先方式によって，保存するファイル名を変える 
     if [ "$prior_method" -eq "0" ]; then
-        mkdir -p "/home/hirata/soem-logs/throughput/base/${timestamp}-cotask-${cotask_count}"
-        cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/base/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
+        mkdir -p "/home/hirata/soem-logs/throughput/cpu-bound-task/base/${timestamp}-cotask-${cotask_count}"
+        cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/cpu-bound-task/base/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
     elif [ "$prior_method" -eq "1" ]; then
-        mkdir -p "/home/hirata/soem-logs/throughput/part-prior/${timestamp}-cotask-${cotask_count}"
-        cp "$OUTPUT_FILE2" "/home/hirata/soem-logs/throughput/part-prior/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE2"
+        mkdir -p "/home/hirata/soem-logs/throughput/cpu-bound-task/part-prior/${timestamp}-cotask-${cotask_count}"
+        cp "$OUTPUT_FILE2" "/home/hirata/soem-logs/throughput/cpu-bound-task/part-prior/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE2"
     elif [ "$prior_method" -eq "2" ]; then
-    	mkdir -p "/home/hirata/soem-logs/throughput/whole-prior/nice/sched_other/${timestamp}-cotask-${cotask_count}"
-    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/whole-prior/nice/sched_other/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
+    	mkdir -p "/home/hirata/soem-logs/throughput/cpu-bound-task/whole-prior/nice/sched_other/${timestamp}-cotask-${cotask_count}"
+    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/cpu-bound-task/whole-prior/nice/sched_other/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
     elif [ "$prior_method" -eq "3" ]; then
-    	mkdir -p "/home/hirata/soem-logs/throughput/whole-prior/sched_fifo/${timestamp}-cotask-${cotask_count}"
-    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/whole-prior/sched_fifo/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
+    	mkdir -p "/home/hirata/soem-logs/throughput/cpu-bound-task/whole-prior/sched_fifo/${timestamp}-cotask-${cotask_count}"
+    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/cpu-bound-task/whole-prior/sched_fifo/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
     elif [ "$prior_method" -eq "4" ]; then
-    	mkdir -p "/home/hirata/soem-logs/throughput/whole-prior/scx_whole/${timestamp}-cotask-${cotask_count}"
-    	cp "$OUTPUT_FILE3" "/home/hirata/soem-logs/throughput/whole-prior/scx_whole/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE3"
+    	mkdir -p "/home/hirata/soem-logs/throughput/cpu-bound-task/whole-prior/scx_whole/${timestamp}-cotask-${cotask_count}"
+    	cp "$OUTPUT_FILE3" "/home/hirata/soem-logs/throughput/cpu-bound-task/whole-prior/scx_whole/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE3"
     else
     	echo "Copy Error!!"
     fi
@@ -192,7 +203,8 @@ run_benchmark() {
         done
         sleep 0.1
         # SOEM タスク開始
-        sudo $benchmark 10000 $cotask_count &
+        #sudo $benchmark 10000 $cotask_count &
+        sudo $benchmark $cotask_count &
         soem_pid=$!
         echo "  -> soem PID: $soem_pid"
         pids+=($soem_pid)
@@ -218,7 +230,8 @@ run_benchmark() {
         done
         sleep 0.1
         # SOEM タスク開始
-        sudo $benchmark 10000 $cotask_count &
+        #sudo $benchmark 10000 $cotask_count &
+        sudo $benchmark $cotask_count &
         soem_pid=$!
         echo "  -> soem PID: $soem_pid"
         pids+=($soem_pid)
@@ -244,7 +257,8 @@ run_benchmark() {
         done
         sleep 0.1
         # SOEM タスク開始
-        sudo taskset -c 0 nice -n -20 $benchmark 10000 $cotask_count &
+        #sudo taskset -c 0 nice -n -20 $benchmark 10000 $cotask_count &
+        sudo taskset -c 0 nice -n -2 $benchmark $cotask_count &
         soem_pid=$!
         echo "  -> soem PID: $soem_pid"
         pids+=($soem_pid)
@@ -270,7 +284,8 @@ run_benchmark() {
         done
         sleep 0.1
         # SOEM タスク開始
-        sudo taskset -c 0 chrt -f 99 $benchmark 10000 $cotask_count &
+        #sudo taskset -c 0 chrt -f 99 $benchmark 10000 $cotask_count &
+        sudo taskset -c 0 chrt -f 1 $benchmark $cotask_count &
         soem_pid=$!
         echo "  -> soem PID: $soem_pid"
         pids+=($soem_pid)
@@ -296,7 +311,8 @@ run_benchmark() {
         done
         sleep 0.1
         # SOEM タスク開始
-        sudo perf stat $benchmark 10000 $cotask_count &
+        #sudo $benchmark 10000 $cotask_count &
+        sudo $benchmark $cotask_count &
         soem_pid=$!
         echo "  -> soem PID: $soem_pid"
         pids+=($soem_pid)
@@ -342,7 +358,7 @@ main() {
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
     	    check_scheduler 1 1
-    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_SOEM
+    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_CPUBOUND_TASK
     	    # スケジーラの停止
     	    stop_scheduler
     	done
@@ -362,7 +378,7 @@ main() {
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
     	    check_scheduler 1 1
-    	    run_benchmark 1 1 $cotask_count $iteration $SCX_SOEM
+    	    run_benchmark 1 1 $cotask_count $iteration $SCX_CPUBOUND_TASK
     	    # スケジーラの停止
     	    stop_scheduler
     	done
@@ -381,7 +397,7 @@ main() {
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
     	    #check_scheduler 1 1
-    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_SOEM
+    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_CPUBOUND_TASK
     	    # スケジーラの停止
     	    stop_scheduler
     	done
@@ -400,7 +416,7 @@ main() {
 
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
-    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_SOEM
+    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_CPUBOUND_TASK
     	    # スケジーラの停止
     	    stop_scheduler
     	done
@@ -420,7 +436,7 @@ main() {
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
     	    check_scheduler 1 1
-    	    run_benchmark 1 1 $cotask_count $iteration $WHOLE_SCX_SOEM
+    	    run_benchmark 1 1 $cotask_count $iteration $WHOLE_SCX_CPUBOUND_TASK
     	    # スケジーラの停止
     	    stop_scheduler
     	done
