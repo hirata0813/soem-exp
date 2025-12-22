@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     }
     loop_end = __rdtsc();
 
-    printf("pid = %d, elapsed = %.9f\n", pid, (loop_end - loop_start) / (double)CPU_FREQ_HZ);
+    printf("cotask: pid = %d, elapsed = %.9f\n", pid, (loop_end - loop_start) / (double)CPU_FREQ_HZ);
 
     while (1) {
         sum++;
