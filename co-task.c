@@ -27,30 +27,27 @@ int main(int argc, char *argv[]) {
     unsigned long long loop_start;
     unsigned long long loop_end;
     const unsigned long long CPU_FREQ_HZ = 3500000000UL;
-    const unsigned long long threshold = 41695550000UL; // 非競合時は，これで大体1分
 
     ///* SIGINT ハンドラ登録 */
-    //struct sigaction sa;
-    //sa.sa_handler = sigint_handler;
-    //sigemptyset(&sa.sa_mask);
-    //sa.sa_flags = 0;
-    //sigaction(SIGINT, &sa, NULL);
+    struct sigaction sa;
+    sa.sa_handler = sigint_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
     
     if (tids_fd >= 3){
          bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
     }
 
     loop_start = __rdtsc();
-    while (sum <= threshold) {
+
+    // SIGINT を受け取るまでカウントアップし続ける
+    while (!stop) {
         sum++;
     }
     loop_end = __rdtsc();
 
-    printf("cotask: pid = %d, elapsed = %.9f\n", pid, (loop_end - loop_start) / (double)CPU_FREQ_HZ);
-
-    while (1) {
-        sum++;
-    }
+    printf("cotask: pid = %d, elapsed = %.9f, cnt_up = %llu\n", pid, (loop_end - loop_start) / (double)CPU_FREQ_HZ, sum);
 
     return 0;
 }

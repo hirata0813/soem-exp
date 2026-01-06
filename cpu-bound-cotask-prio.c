@@ -38,7 +38,7 @@ void *writer_thread(void *arg)
     int tids_fd = bpf_obj_get("/sys/fs/bpf/priority_tids");
     int pid = getpid();
     int tid = syscall(SYS_gettid);
-    char buf[1024 * 1024];
+    char buf[1024 * 800];
     FILE *f = fopen("testfile", "wb");
     int flag0 = 0;
     int flag2 = 2;
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     loop_start = (double*)malloc(sizeof(unsigned long long) * 10);
     loop_end = (double*)malloc(sizeof(unsigned long long) * 10);
     const unsigned long long CPU_FREQ_HZ = 3500000000UL;
-    const unsigned long long threshold = 41100550000UL; // 非競合時は，これで大体1分
+    const unsigned long long threshold = 41450550000UL;
     const unsigned long long oneshot_threshold = threshold / 10;
     int cotask_num = atoi(argv[1]);
     char fname[128];
@@ -150,46 +150,6 @@ int main(int argc, char *argv[]) {
     logfile_output(fname, loop_start, loop_end, CPU_FREQ_HZ, cotask_num);
 
     //printf("pid = %d, elapsed = %.9f\n", pid, (loop_end - loop_start) / (double)CPU_FREQ_HZ);
-    printf("redundant process\n");
-
-    // 冗長処理
-    while (1) {
-        sum=0;
-        // CPU バウンド処理
-        i = 0;
-        while(i <= oneshot_threshold) {
-            i++;
-        }
-        sum+=i;
-
-        int ret;
-        pfd.fd = efd;
-        pfd.events = POLLIN;
-        pthread_t th;
-        pthread_create(&th, NULL, writer_thread, NULL);
-        int poll_loop = 0;
-
-        if (tids_fd >= 3){
-             bpf_map_update_elem(tids_fd, &tid, &flag1, BPF_ANY);
-        }
-        do {
-            unsigned long long ppoll_start = __rdtsc();
-            ret = ppoll(&pfd, 1, &timeout, NULL);
-            unsigned long long ppoll_end = __rdtsc();
-            //printf("ppoll 処理=%.9f\n", (ppoll_end - ppoll_start) / (double)CPU_FREQ_HZ);
-            poll_loop++;
-        } while (ret == 0);   /* timeout → retry */
-        if (tids_fd >= 3){
-             bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
-        }
-
-        if (ret > 0 && (pfd.revents & POLLIN)) {
-            uint64_t val;
-            read(efd, &val, sizeof(val));
-        }
-        /* スレッド回収 */
-        pthread_join(th, NULL);
-    }
     free(loop_start);
     free(loop_end);
     close(efd);
