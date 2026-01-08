@@ -168,6 +168,7 @@ int *poll_ret;
 unsigned long long soem_start;
 unsigned long long soem_end;
 extern const unsigned long long CPU_FREQ_HZ;
+int soem_init_flag = 0;
 
 int main(int argc, char *argv[])
 {
@@ -187,6 +188,7 @@ int main(int argc, char *argv[])
   // valiables for test
   char nic[10] = "eno1";
   repeat_cnt = atoi(argv[1]);
+  int repeat_cnt_copy = repeat_cnt;
   disturb_num = atoi(argv[2]);
   io_start = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
   io_end = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
@@ -232,8 +234,9 @@ int main(int argc, char *argv[])
     //memset(poll_ret, 0, sizeof(*poll_ret));
 
     // 以下の for ループ内で I/O 処理を担当
+    soem_init_flag = 1;
     soem_start = __rdtsc();
-    for (i = 0; i < repeat_cnt; ++i)
+    for (i = 0; i < repeat_cnt_copy; ++i)
     {
       ecx_send_processdata(context);
       wkc = ecx_receive_processdata(context, EC_TIMEOUTRET);
@@ -256,6 +259,22 @@ int main(int argc, char *argv[])
       // カウンタを1増やす
       io_cnt++;
       //sleep(1);
+
+      // ===========CPU処理区間======================================
+      const unsigned long long threshold = 4145055000UL; // 非競合時は，これで大体1分
+      unsigned long long cpu_start;
+      unsigned long long cpu_end;
+      int j = 0;
+      cpu_start = __rdtsc();
+      if (soem_init_flag){
+         while(j <= threshold) {
+             j++;
+         }
+      }
+      cpu_end = __rdtsc();
+      //printf("CPU 処理=%.9f\n", (cpu_end - cpu_start) / (double)CPU_FREQ_HZ);
+      //printf("Init Flag=%d\n", soem_init_flag);
+      // ===========CPU処理区間======================================
 
       osal_usleep(interval_usec);
     }
@@ -281,39 +300,6 @@ int main(int argc, char *argv[])
   //loop_num_output();
 
   printf("soem-loop: %.9f\n", soem_loop_elapsed);
-
-  // 以降は，規定の仕事が終わった後用に，外乱として動き続けるための処理
-  printf("redundant processing start\n");
-  while(1){
-   int i, min_time, max_time;
-   min_time = max_time = 0;
-
-   context = &(fieldbus.context);
-   grp = context->grouplist + fieldbus.group;
-
-   loop_index = 0;
-   io_cnt = 0;
-   memset(io_start, 0, sizeof(*io_start));
-   memset(io_end, 0, sizeof(*io_end));
-
-   // 以下の for ループ内で I/O 処理を担当
-   soem_start = __rdtsc();
-   for (i = 0; i < repeat_cnt; ++i)
-   {
-     ecx_send_processdata(context);
-     wkc = ecx_receive_processdata(context, EC_TIMEOUTRET);
-
-     expected_wkc = grp->outputsWKC * 2 + grp->inputsWKC;
-     if (wkc == EC_NOFRAME)
-     {
-         break;
-     }
-     io_cnt++;
-
-     osal_usleep(interval_usec);
-   }
-   soem_end = __rdtsc();
-  }
 
   fieldbus_stop(&fieldbus);
   //close_logfile();

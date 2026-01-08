@@ -262,6 +262,21 @@ int main(int argc, char *argv[])
       io_cnt++;
       //sleep(1);
 
+      // ===========CPU処理区間======================================
+      const unsigned long long threshold = 4145055000UL; // 非競合時は，これで大体1分
+      unsigned long long cpu_start;
+      unsigned long long cpu_end;
+      int j = 0;
+      cpu_start = __rdtsc();
+      if (soem_init_flag){
+         while(j <= threshold) {
+             j++;
+         }
+      }
+      cpu_end = __rdtsc();
+      //printf("CPU 処理=%.9f\n", (cpu_end - cpu_start) / (double)CPU_FREQ_HZ);
+      //printf("Init Flag=%d\n", soem_init_flag);
+      // ===========CPU処理区間======================================
       osal_usleep(interval_usec);
     }
     soem_end = __rdtsc();

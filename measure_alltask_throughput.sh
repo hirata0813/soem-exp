@@ -22,9 +22,12 @@ prior_method="$2"
 PRIORITY_SCHED="scx_priority"
 
 # 出力ファイル
-OUTPUT_FILE1="simple-cpu-bound-task-result.csv"
-OUTPUT_FILE2="prior-cpu-bound-task-result.csv"
-OUTPUT_FILE3="whole-prior-cpu-bound-task-result.csv"
+#OUTPUT_FILE1="simple-cpu-bound-task-result.csv"
+#OUTPUT_FILE2="prior-cpu-bound-task-result.csv"
+#OUTPUT_FILE3="whole-prior-cpu-bound-task-result.csv"
+
+OUTPUT_FILE1="simple-soem-task-result.csv"
+OUTPUT_FILE2="prior-soem-task-result.csv"
 
 echo "[INIT] Checking and stopping existing processes..."
 
@@ -204,8 +207,8 @@ run_benchmark() {
         sleep 0.1
 
         # メインタスク開始
-        #sudo $benchmark 10000 $cotask_count &
-        sudo $benchmark $cotask_count &
+        sudo $benchmark 10 $cotask_count &
+        #sudo $benchmark $cotask_count &
         main_pid=$!
         echo "  -> main task PID: $main_pid"
 
@@ -236,8 +239,8 @@ run_benchmark() {
         sleep 0.1
 
         # メインタスク開始
-        #sudo $benchmark 10000 $cotask_count &
-        sudo $benchmark $cotask_count &
+        sudo $benchmark 10 $cotask_count &
+        #sudo $benchmark $cotask_count &
         main_pid=$!
         echo "  -> main task PID: $main_pid"
 
@@ -268,8 +271,8 @@ run_benchmark() {
 
 
         # メインタスク開始
-        #sudo $benchmark 10000 $cotask_count &
-        sudo taskset -c 0 nice -n -20 $benchmark $cotask_count &
+        sudo taskset -c 0 nice -n -20 $benchmark 10 $cotask_count &
+        #sudo taskset -c 0 nice -n -2 $benchmark $cotask_count &
         main_pid=$!
         echo "  -> main task PID: $main_pid"
 
@@ -372,7 +375,7 @@ main() {
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
     	    check_scheduler 1 1
-    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_CPUBOUND_TASK
+    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_SOEM
     	    # スケジーラの停止
     	    stop_scheduler
     	done
@@ -391,7 +394,7 @@ main() {
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
     	    check_scheduler 1 1
-    	    run_benchmark 1 1 $cotask_count $iteration $SCX_CPUBOUND_TASK
+    	    run_benchmark 1 1 $cotask_count $iteration $SCX_SOEM
     	    # スケジーラの停止
     	    stop_scheduler
     	done
@@ -410,7 +413,7 @@ main() {
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
     	    #check_scheduler 1 1
-    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_CPUBOUND_TASK
+    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_SOEM
     	    # スケジーラの停止
     	    stop_scheduler
     	done
@@ -428,7 +431,7 @@ main() {
 
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
-    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_CPUBOUND_TASK
+    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_SOEM
     	    # スケジーラの停止
     	    stop_scheduler
     	done

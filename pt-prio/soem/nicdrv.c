@@ -578,25 +578,6 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    //printf("[scx-soem]: disturb_num=%d, io_cnt=%d, io_start=%llu,io_end=%llu\n", disturb_num, io_cnt, io_start[io_cnt], io_end[io_cnt]);
    close(tids_fd);
 
-   // ===========CPU処理区間======================================
-
-   const unsigned long long threshold = 4145055000UL; // 非競合時は，これで大体1分
-   const unsigned long long CPU_FREQ_HZ = 3500000000UL;
-   unsigned long long cpu_start;
-   unsigned long long cpu_end;
-   int i = 0;
-   cpu_start = __rdtsc();
-   if (soem_init_flag){
-      while(i <= threshold) {
-          i++;
-      }
-   }
-   cpu_end = __rdtsc();
-   //printf("CPU 処理=%.9f\n", (cpu_end - cpu_start) / (double)CPU_FREQ_HZ);
-   //printf("Init Flag=%d\n", soem_init_flag);
-   // ===========CPU処理区間======================================
-
-
    /* only do redundant functions when in redundant mode */
   //  if (port->redstate != ECT_RED_NONE)
   //  {
