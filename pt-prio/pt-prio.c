@@ -168,6 +168,7 @@ int *poll_ret;
 unsigned long long soem_start;
 unsigned long long soem_end;
 extern const unsigned long long CPU_FREQ_HZ;
+int soem_init_flag = 0;
 
 int main(int argc, char *argv[])
 {
@@ -188,6 +189,7 @@ int main(int argc, char *argv[])
   // valiables for test
   char nic[10] = "eno1";
   repeat_cnt = atoi(argv[1]);
+  int repeat_cnt_copy = repeat_cnt;
   disturb_num = atoi(argv[2]);
   io_start = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
   io_end = (double*)malloc(sizeof(unsigned long long) * repeat_cnt);
@@ -234,7 +236,9 @@ int main(int argc, char *argv[])
     //memset(poll_ret, 0, sizeof(*poll_ret));
     soem_start = __rdtsc();
     // 以下の for ループ内で I/O 処理を担当
-    for (i = 0; i < repeat_cnt; ++i)
+
+    soem_init_flag = 1;
+    for (i = 0; i < repeat_cnt_copy; ++i)
     {
       ecx_send_processdata(context);
       wkc = ecx_receive_processdata(context, EC_TIMEOUTRET);

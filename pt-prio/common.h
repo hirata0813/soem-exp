@@ -13,5 +13,6 @@ extern unsigned long long *loop_end;
 extern int *poll_num;
 extern int *poll_ret;
 extern uint32_t loop_index;
+extern int soem_init_flag;
 
 #endif
