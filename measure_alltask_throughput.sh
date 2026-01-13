@@ -7,6 +7,7 @@
 # 設定
 SIMPLE_SOEM="./pt/pt"
 SCX_SOEM="./pt-prio/pt-prio"
+NICE_SOEM="./pt-prio-nice/pt-prio-nice"
 WHOLE_SCX_SOEM="./pt-prio-whole/pt-prio-whole"
 COTASK="./co-task"
 ITERATIONS=1
@@ -288,59 +289,68 @@ run_benchmark() {
                 kill -INT "$cotask_pid" 2>/dev/null
             fi
         done
-    elif [ "$prior_method" -eq "3" ]; then
-    	# 計測4(SCHED_FIFO)
+    elif [ "$prior_method" -eq "2" ]; then
+    	# 計測3(nice)
 
         # 共存タスク開始
         for ((i=1; i<=$cotask_count; i++)); do
             taskset -c 0 $COTASK &
             cotask_pid=$!
             echo "  -> cotask $i PID: $cotask_pid"
-            pids+=($cotask_pid)
+            cotask_pids+=($cotask_pid)
 	        sleep 0.1
         done
         sleep 0.1
-        # SOEM タスク開始
-        #sudo taskset -c 0 chrt -f 99 $benchmark 10000 $cotask_count &
-        sudo taskset -c 0 chrt -f 1 $benchmark $cotask_count &
-        soem_pid=$!
-        echo "  -> soem PID: $soem_pid"
-        pids+=($soem_pid)
 
-        # 配列の要素数を取得
-        pids_length=${#pids[@]}
 
-        # 全てのタスクの完了を待つ
-        echo "Waiting for all tasks to complete..."
-        for pid in "${pids[@]}"; do
-            wait $pid 2>/dev/null
+        # メインタスク開始
+        sudo taskset -c 0 nice -n -20 $benchmark 10 $cotask_count &
+        #sudo taskset -c 0 nice -n -2 $benchmark $cotask_count &
+        main_pid=$!
+        echo "  -> main task PID: $main_pid"
+
+        # メインタスクの完了を待つ
+        echo "Waiting for main task to complete..."
+        wait $main_pid 2>/dev/null
+
+        # 共存タスクに SIGINT を送信
+        echo "Terminating co-tasks..."
+        for cotask_pid in "${cotask_pids[@]}"; do
+            if kill -0 "$cotask_pid" 2>/dev/null; then
+                echo "Killing co-task(PID: $cotask_pid)"
+                kill -INT "$cotask_pid" 2>/dev/null
+            fi
         done
-    elif [ "$prior_method" -eq "4" ]; then
-    	# 計測5(sched_ext 最初から最後まで)
+    elif [ "$prior_method" -eq "3" ]; then
+    	# 計測4(niceを用いた部分優先実行)
 
         # 共存タスク開始
         for ((i=1; i<=$cotask_count; i++)); do
-            $COTASK &
+            taskset -c 0 $COTASK &
             cotask_pid=$!
             echo "  -> cotask $i PID: $cotask_pid"
-            pids+=($cotask_pid)
+            cotask_pids+=($cotask_pid)
 	        sleep 0.1
         done
         sleep 0.1
-        # SOEM タスク開始
-        #sudo $benchmark 10000 $cotask_count &
-        sudo $benchmark $cotask_count &
-        soem_pid=$!
-        echo "  -> soem PID: $soem_pid"
-        pids+=($soem_pid)
 
-        # 配列の要素数を取得
-        pids_length=${#pids[@]}
 
-        # 全てのタスクの完了を待つ
-        echo "Waiting for all tasks to complete..."
-        for pid in "${pids[@]}"; do
-            wait $pid 2>/dev/null
+        # メインタスク開始
+        sudo taskset -c 0 nice -n -20 $benchmark 10 $cotask_count &
+        main_pid=$!
+        echo "  -> main task PID: $main_pid"
+
+        # メインタスクの完了を待つ
+        echo "Waiting for main task to complete..."
+        wait $main_pid 2>/dev/null
+
+        # 共存タスクに SIGINT を送信
+        echo "Terminating co-tasks..."
+        for cotask_pid in "${cotask_pids[@]}"; do
+            if kill -0 "$cotask_pid" 2>/dev/null; then
+                echo "Killing co-task(PID: $cotask_pid)"
+                kill -INT "$cotask_pid" 2>/dev/null
+            fi
         done
     else
     	echo "Error!!"
@@ -421,43 +431,24 @@ main() {
     	mkdir -p "/home/hirata/soem-logs/throughput/cpu-bound-task/whole-prior/nice/sched_other/${timestamp}-cotask-${cotask_count}"
     	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/cpu-bound-task/whole-prior/nice/sched_other/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
     elif [ "$prior_method" -eq "3" ]; then
-    	# 計測4(SCHED_FIFO)
+    	# 計測4(部分優先実行をniceで実装)
     	echo ""
     	echo "=============================================="
-    	echo "Measure 4: 全体優先実行(SCHED_FIFO)"
+    	echo "Measure 4: 部分優先実行(nice を用いて実装)"
     	echo "=============================================="
     	
     	echo "Testing with ${cotask_count} cotasks"
 
     	# 各イテレーション(1~10)について測定
     	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
-    	    run_benchmark 1 1 $cotask_count $iteration $SIMPLE_SOEM
+    	    #check_scheduler 1 1
+    	    run_benchmark 1 1 $cotask_count $iteration $NICE_SOEM
     	    # スケジーラの停止
     	    stop_scheduler
     	done
     	
-
-    	mkdir -p "/home/hirata/soem-logs/simple-soem/sched_fifo/${timestamp}-cotask-${joined}"
-    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/simple-soem/sched_fifo/${timestamp}-cotask-${joined}/$OUTPUT_FILE1"
-    elif [ "$prior_method" -eq "4" ]; then
-    	# 計測5(sched_ext 最初から最後まで)
-    	echo ""
-    	echo "=============================================="
-    	echo "Measure 5: 全体優先実行(sched_ext 最初から最後まで)"
-    	echo "=============================================="
-    	
-    	echo "Testing with ${cotask_count} cotasks"
-
-    	# 各イテレーション(1~10)について測定
-    	for ((iteration=1; iteration<=ITERATIONS; iteration++)); do
-    	    check_scheduler 1 1
-    	    run_benchmark 1 1 $cotask_count $iteration $WHOLE_SCX_CPUBOUND_TASK
-    	    # スケジーラの停止
-    	    stop_scheduler
-    	done
-
-    	mkdir -p "/home/hirata/soem-logs/simple-soem/scx_whole/${timestamp}-cotask-${joined}"
-    	cp "$OUTPUT_FILE3" "/home/hirata/soem-logs/simple-soem/scx_whole/${timestamp}-cotask-${joined}/$OUTPUT_FILE3"
+    	mkdir -p "/home/hirata/soem-logs/throughput/part-prior/nice/${timestamp}-cotask-${cotask_count}"
+    	cp "$OUTPUT_FILE1" "/home/hirata/soem-logs/throughput/part-prior/nice/${timestamp}-cotask-${cotask_count}/$OUTPUT_FILE1"
     else
     	echo "Error!!"
     fi
