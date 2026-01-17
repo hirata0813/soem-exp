@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
    // nice 関数を呼び，nice 値を即座に戻す
    int nice_val = getpriority(PRIO_PROCESS, 0);
    printf("実行開始直後: nice値=%d\n", nice_val);
-   nice_val = nice(20);
+   nice_val = nice(2);
 
    printf("nice 値を戻した直後: nice値=%d\n", nice_val);
 
@@ -276,8 +276,8 @@ int main(int argc, char *argv[])
       unsigned long long cpu_end;
       int j = 0;
 
-      nice_val = getpriority(PRIO_PROCESS, 0);
-      printf("CPU処理(通常優先度), nice値=%d\n", nice_val);
+      //nice_val = getpriority(PRIO_PROCESS, 0);
+      //printf("CPU処理(通常優先度), nice値=%d\n", nice_val);
       cpu_start = __rdtsc();
       if (soem_init_flag){
          while(j <= threshold) {
@@ -285,14 +285,14 @@ int main(int argc, char *argv[])
          }
       }
       cpu_end = __rdtsc();
-      printf("CPU 処理=%.9f\n", (cpu_end - cpu_start) / (double)CPU_FREQ_HZ);
+      //printf("CPU 処理=%.9f\n", (cpu_end - cpu_start) / (double)CPU_FREQ_HZ);
 
       j = 0;
 
-      printf("\n");
+      //printf("\n");
       // renice システムコールにより，nice 値を下げる
-      nice_val = nice(-20);
-      printf("CPU処理(高優先度), nice値=%d\n", nice_val);
+      //nice_val = nice(-20);
+      //printf("CPU処理(高優先度), nice値=%d\n", nice_val);
       cpu_start = __rdtsc();
       if (soem_init_flag){
          while(j <= threshold) {
@@ -300,11 +300,11 @@ int main(int argc, char *argv[])
          }
       }
       cpu_end = __rdtsc();
-      printf("CPU 処理=%.9f\n", (cpu_end - cpu_start) / (double)CPU_FREQ_HZ);
-      nice_val = nice(20);
+      printf("部分優先(nice): CPU 処理=%.9f\n", (cpu_end - cpu_start) / (double)CPU_FREQ_HZ);
+      //nice_val = nice(20);
 
-      printf("nice 値を戻した直後: nice値=%d\n", nice_val);
-      printf("\n");
+      //printf("nice 値を戻した直後: nice値=%d\n", nice_val);
+      //printf("\n");
       // ===========CPU処理区間======================================
 
       osal_usleep(interval_usec);

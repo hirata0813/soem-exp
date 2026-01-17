@@ -274,7 +274,7 @@ int main(int argc, char *argv[])
          }
       }
       cpu_end = __rdtsc();
-      //printf("CPU 処理=%.9f\n", (cpu_end - cpu_start) / (double)CPU_FREQ_HZ);
+      printf("部分優先(sched_ext) CPU 処理=%.9f\n", (cpu_end - cpu_start) / (double)CPU_FREQ_HZ);
       //printf("Init Flag=%d\n", soem_init_flag);
       // ===========CPU処理区間======================================
       osal_usleep(interval_usec);

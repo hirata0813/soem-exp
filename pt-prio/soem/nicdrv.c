@@ -52,6 +52,8 @@
 #include <x86intrin.h>
 #include "../common.h"
 
+extern const unsigned long long CPU_FREQ_HZ;
+
 #include "oshw.h"
 #include "osal.h"
 
@@ -539,12 +541,21 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    int flag0 = 0;
    int flag1 = 1;
    int loop_num = 0;
+   
+   unsigned long long prio_conf_start;
+   unsigned long long prio_conf_end;
+   unsigned long long prio_conf_start2;
+   unsigned long long prio_conf_end2;
 
-   //get_clock_rdtsc(2);
-   // ===========優先区間======================================
-   if (tids_fd >= 3){
-    	     bpf_map_update_elem(tids_fd, &tid, &flag1, BPF_ANY);
+   if (soem_init_flag == 1){
+      prio_conf_start = __rdtsc();
+      // ===========優先区間======================================
+      if (tids_fd >= 3){
+       	     bpf_map_update_elem(tids_fd, &tid, &flag1, BPF_ANY);
+      }
+      prio_conf_end = __rdtsc();
    }
+
    // ポーリング開始時刻取得
    io_start[io_cnt] = __rdtsc();
    do
@@ -571,12 +582,20 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    // ポーリング完了時刻取得
    io_end[io_cnt] = __rdtsc();
 
-   if (tids_fd >= 3){
-    	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+   if (soem_init_flag == 1){
+      prio_conf_start2 = __rdtsc();
+      if (tids_fd >= 3){
+       	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+      }
+      prio_conf_end2 = __rdtsc();
    }
    // ===========優先区間======================================
    //printf("[scx-soem]: disturb_num=%d, io_cnt=%d, io_start=%llu,io_end=%llu\n", disturb_num, io_cnt, io_start[io_cnt], io_end[io_cnt]);
    close(tids_fd);
+
+   if (soem_init_flag == 1){
+      printf("部分優先(sched_ext) 優先フラグ設定=%.9f，優先フラグを戻す=%.9f，合計=%.9f\n", (prio_conf_end - prio_conf_start) / (double)CPU_FREQ_HZ, (prio_conf_end2 - prio_conf_start2) / (double)CPU_FREQ_HZ, (prio_conf_end - prio_conf_start) / (double)CPU_FREQ_HZ + (prio_conf_end2 - prio_conf_start2) / (double)CPU_FREQ_HZ);
+   }
 
    /* only do redundant functions when in redundant mode */
   //  if (port->redstate != ECT_RED_NONE)

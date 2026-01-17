@@ -51,6 +51,8 @@
 #include <sys/syscall.h>
 #include <x86intrin.h>
 #include "../common.h"
+#include <sys/resource.h>
+extern const unsigned long long CPU_FREQ_HZ;
 
 #include "oshw.h"
 #include "osal.h"
@@ -540,10 +542,18 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    int flag1 = 1;
    int loop_num = 0;
 
-   //get_clock_rdtsc(2);
-   // ===========優先しない======================================
-   if (tids_fd >= 3){
-    	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+   unsigned long long prio_conf_start;
+   unsigned long long prio_conf_end;
+   unsigned long long prio_conf_start2;
+   unsigned long long prio_conf_end2;
+   int nice_val = 0;
+
+   // ===========nice() を呼び nice 値を -20 する======================================
+
+   if (soem_init_flag == 1){
+      prio_conf_start = __rdtsc();
+      nice_val = nice(-2);
+      prio_conf_end = __rdtsc();
    }
    // ポーリング開始時刻取得
    io_start[io_cnt] = __rdtsc();
@@ -572,12 +582,18 @@ static int ecx_waitinframe_red(ecx_portt *port, uint8 idx, osal_timert *timer)
    // ポーリング完了時刻取得
    io_end[io_cnt] = __rdtsc();
 
-   if (tids_fd >= 3){
-    	     bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
+   if (soem_init_flag == 1){
+      prio_conf_start2 = __rdtsc();
+      nice_val = nice(2);
+      prio_conf_end2 = __rdtsc();
    }
-   // ===========優先しない======================================
+   // ===========nice() を呼び nice 値を -20 する======================================
    //printf("io_start=%d,io_end=%d\n", io_start[io_cnt], io_end[io_cnt]);
    close(tids_fd);
+
+   if (soem_init_flag == 1){
+      printf("部分優先(sched_ext) 優先フラグ設定=%.9f，優先フラグを戻す=%.9f，合計=%.9f\n", (prio_conf_end - prio_conf_start) / (double)CPU_FREQ_HZ, (prio_conf_end2 - prio_conf_start2) / (double)CPU_FREQ_HZ, (prio_conf_end - prio_conf_start) / (double)CPU_FREQ_HZ + (prio_conf_end2 - prio_conf_start2) / (double)CPU_FREQ_HZ);
+   }
 
 
    /* only do redundant functions when in redundant mode */
