@@ -14,8 +14,12 @@ clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall cp
 clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall -c cpu-bound-cotask-whole-prio.c -o cpu-bound-cotask-whole-prio.o
 clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall cpu-bound-cotask-whole-prio.o -o cpu-bound-cotask-whole-prio -lbpf
 
+clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall -c ppoll-exp.c -o ppoll-exp.o
+clang -I/usr/include/bpf -I../scx/build/scheds/c/scx_priority.p/ -O0 -g -Wall ppoll-exp.o -o ppoll-exp -lbpf
+
 rm infinityloop.o
 rm co-task.o
 rm cpu-bound-cotask.o
 rm cpu-bound-cotask-prio.o
 rm cpu-bound-cotask-whole-prio.o
+rm ppoll-exp.o

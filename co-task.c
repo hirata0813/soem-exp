@@ -34,7 +34,9 @@ int main(int argc, char *argv[]) {
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, NULL);
-    
+
+    printf("co-task: PID=%d\n", pid);
+
     if (tids_fd >= 3){
          bpf_map_update_elem(tids_fd, &tid, &flag0, BPF_ANY);
     }

@@ -51,10 +51,30 @@ tracepoint:sched:sched_switch
 / cpu == 0 /
 {
     if ($cond) {
+        /*
+         * prev_state:
+         * 0        = TASK_RUNNING (runnable)
+         * 1        = TASK_INTERRUPTIBLE
+         * 2        = TASK_UNINTERRUPTIBLE
+         */
+
         \$ts = nsecs;
-        printf("PID:%d 停止，PID:%d 実行\n", args->prev_pid, args->next_pid);
+
+        if (args->prev_state == 0) {
+            printf("[%llu.%06llu] PID:%d RUNNING → RUNNABLE(停止), PID:%d RUNNABLE → RUNNING(開始)\n",
+                (\$ts - @start_time[0]) / 1000000000,
+                ((\$ts - @start_time[0]) % 1000000000) / 1000,
+                args->prev_pid, args->next_pid);
+
+        } else {
+            printf("[%llu.%06llu] PID:%d RUNNING → SLEEP(停止), PID:%d RUNNABLE → RUNNING(開始)\n",
+                (\$ts - @start_time[0]) / 1000000000,
+                ((\$ts - @start_time[0]) % 1000000000) / 1000,
+                args->prev_pid, args->next_pid);
+        }
     }
 }
+
 tracepoint:sched:sched_wakeup
 / cpu == 0 /
 {
