@@ -32,24 +32,38 @@ for pid in "${PIDS[@]}"; do
     fi
 done
 
+cond2=""
+for pid in "${PIDS[@]}"; do
+    if [ -n "$cond2" ]; then
+        cond2="$cond2 || args->pid == $pid"
+    else
+        cond2="args->pid == $pid"
+    fi
+done
+
 # ---- bpftrace スクリプト出力 ---------------
 cat <<EOF
-config = {
-    max_map_keys=65536
-}
-
-BEGIN {
-    @idx = 0;
+BEGIN{
+    @start_time[0] = nsecs;
 }
 
 tracepoint:sched:sched_switch
+/ cpu == 0 /
 {
     if ($cond) {
-        @ts[@idx]   = nsecs;
-        @next[@idx] = args->next_pid;
-        @prev[@idx] = args->prev_pid;
-	@cpu[@idx] = cpu;
-        @idx++;
+        \$ts = nsecs;
+        printf("PID:%d 停止，PID:%d 実行\n", args->prev_pid, args->next_pid);
+    }
+}
+tracepoint:sched:sched_wakeup
+/ cpu == 0 /
+{
+    if ($cond2) {
+        \$ts = nsecs;
+        printf("[%llu.%06llu] PID:%d WAKEUP\n",
+               (\$ts - @start_time[0]) / 1000000000,
+               ((\$ts - @start_time[0]) % 1000000000) / 1000,
+               args->pid);
     }
 }
 EOF
